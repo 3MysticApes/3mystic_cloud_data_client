@@ -1,5 +1,5 @@
 from threemystic_cloud_data_client.cloud_providers.base_class.base import cloud_data_client_provider_base as base
-
+from threemystic_cloud_client.cloud_client import cloud_client
 
 class cloud_data_client(base): 
   """This is a library to help with the interaction with the cloud providers"""
@@ -16,14 +16,6 @@ class cloud_data_client(base):
     
   def get_supported_providers(self, *args, **kwargs):
     return super().get_supported_providers()
-  
-  def get_cloud_client(self, *args, **kwargs):
-    if hasattr(self, "_cloud_client"):
-      return self._cloud_client
-    
-    from threemystic_cloud_client.cloud_client import cloud_client
-    self._cloud_client = cloud_client(logger= self.get_logger(), common= self.get_common())
-    return self.get_cloud_client()
   
   def init_client(self, provider, *args, **kwargs):
     provider = self.get_common().helper_type().string().set_case(string_value= provider, case= "lower") if provider is not None else ""
@@ -45,12 +37,22 @@ class cloud_data_client(base):
 
     if provider == "azure":
       from threemystic_cloud_data_client.cloud_providers.azure.client import cloud_data_client_azure_client as provider_cloud_data_client
-      self._client[provider] = provider_cloud_data_client()
+      self._client[provider] = provider_cloud_data_client(
+        cloud_client = cloud_client(
+          logger= self.get_logger(), 
+          common= self.get_common()
+        ).client(provider= provider)
+      )
       return
     
     if provider == "aws":
       from threemystic_cloud_data_client.cloud_providers.azure.client import cloud_data_client_azure_client as provider_cloud_data_client
-      self._client[provider] = provider_cloud_data_client()
+      self._client[provider] = provider_cloud_data_client(
+        cloud_client = cloud_client(
+          logger= self.get_logger(), 
+          common= self.get_common()
+        ).client(provider= provider)
+      )
       return  
        
     raise self.get_common().exception().exception(

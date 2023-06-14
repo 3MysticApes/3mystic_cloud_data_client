@@ -79,9 +79,13 @@ class cloud_data_client_cli(base_process_options):
     return
 
   def version_dispaly(self, *args, **kwargs): 
+    from threemystic_cloud_client.cloud_client import cloud_client
+    cloud_client = cloud_client(
+      logger= self._cloud_data_client.get_common().get_logger(), 
+      common= self._cloud_data_client.get_common())
     print(f"You currenly have installed")
     print(f"3mystic_cloud_data_client: v{self._cloud_data_client.version()}")
-    print(f"3mystic_cloud_client: v{self._cloud_data_client.get_cloud_client().version()}")
+    print(f"3mystic_cloud_client: v{cloud_client.version()}")
     print(f"3mystic_common: v{self._cloud_data_client.get_common().version()}")
     print()
 

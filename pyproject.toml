@@ -30,6 +30,8 @@ dependencies = [
   "threemystic-common >= 0.0.6",
   "threemystic-cloud-client >= 0.0.6",
   "typing-extensions >= 4.4.0",
+  "asyncio >= 3.4.3",
+  "tqdm >= 4.65.0",
 
 ]
 dynamic = ["version"]
