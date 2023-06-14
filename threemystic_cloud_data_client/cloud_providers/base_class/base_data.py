@@ -85,6 +85,7 @@ class cloud_data_client_provider_base_data(base):
 
     print("accounts")
     for account in accounts:
+      print(account)
       print(f"{self.get_cloud_client().get_account_name(account= account)} - {self.get_cloud_client().get_account_id(account= account)}")
 
     
