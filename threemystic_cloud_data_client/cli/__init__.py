@@ -32,7 +32,7 @@ class cloud_data_client_cli(base_process_options):
         "--provider,-p": {
             "default": None, 
             "type": str,
-            "choices": self._cloud_data_client.get_cloud_client().get_supported_providers(),
+            "choices": self._cloud_data_client.get_supported_providers(),
             "dest": "client_provider",
             "help": "Provider: This is to set the provider that should be used",
             "action": 'store'
@@ -49,16 +49,16 @@ class cloud_data_client_cli(base_process_options):
     
     
   def process_client_action(self, force_action = None, *args, **kwargs):
-    if self._cloud_client.get_common().helper_type().string().is_null_or_whitespace(string_value= force_action):
+    if self._cloud_data_client.get_common().helper_type().string().is_null_or_whitespace(string_value= force_action):
       force_action = self.__get_client_acount()
     if force_action == "version":
       self.version_dispaly()
       return
     
-    # if force_action == "config":
-    #   from threemystic_cloud_client.cli.actions.config import cloud_client_config as user_action
-    #   user_action(cloud_client= self._cloud_client).main(provider= self._client_provider)
-    #   return
+    if force_action == "config":
+      from threemystic_cloud_data_client.cli.actions.config import cloud_data_client_config as user_action
+      user_action(cloud_client= self._cloud_data_client).main(provider= self._client_provider)
+      return
 
 
 

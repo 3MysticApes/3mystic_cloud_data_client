@@ -1,8 +1,10 @@
 from threemystic_common.base_class.base_provider import base
 import abc
 
-class cloud_client_provider_base(base):
+class cloud_data_client_provider_base(base):
   def __init__(self, *args, **kwargs):
+    if "provider" not in kwargs:
+      kwargs["provider"] = self.get_default_provider()
     super().__init__(*args, **kwargs)
     
     self._post_init(*args, **kwargs)
@@ -25,7 +27,7 @@ class cloud_client_provider_base(base):
     return {}
 
   def config_path(self, *args, **kwargs):
-    return self.get_common().get_threemystic_directory_config().joinpath(f"{self.get_main_directory_name()}/3mystic_cloud_client_config_{self.get_provider()}")
+    return self.get_common().get_threemystic_directory_config().joinpath(f"{self.get_main_directory_name()}/config")
   
   def get_config(self, refresh = False, *args, **kwargs):
     if hasattr(self, "_config_data") and not refresh:
@@ -33,8 +35,22 @@ class cloud_client_provider_base(base):
     
     self._config_data = self.__load_config()    
     return self.get_config(*args, **kwargs)
+
+  def _save_config(self, *args, **kwargs):
+     if not self.config_path().parent.exists():
+       self.config_path().parent.mkdir(parents= True)
+     self.config_path().write_text(
+      data= self.get_common().helper_yaml().dumps(data= self.get_config())
+     )
+     self.get_config(refresh = True) 
   
+  def get_default_provider(self, refresh = False, *args, **kwargs):
+    return self.get_config(refresh= refresh).get("default_provider")
   
+  def set_default_provider(self, value, refresh = False, *args, **kwargs):
+    self.get_config(refresh= refresh)["default_provider"] = value
+    self._save_config()
+
   def action_config(self, *args, **kwargs):
     print("Provider config not configured")
   
