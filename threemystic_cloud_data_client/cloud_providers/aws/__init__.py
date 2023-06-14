@@ -4,11 +4,6 @@ from threemystic_cloud_data_client.cloud_providers.aws.base_class.base import cl
 class cloud_data_client_aws(base):
   def __init__(self, *args, **kwargs):
     super().__init__(logger_name= "cloud_data_client_aws", *args, **kwargs)
-  
-  # There is not post init when in Config Mode
-  def _post_init(self, *args, **kwargs):
-    pass
-  
 
   def action_config(self, *args, **kwargs): 
     

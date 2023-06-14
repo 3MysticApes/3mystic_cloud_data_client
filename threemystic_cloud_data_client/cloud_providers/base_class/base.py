@@ -7,11 +7,6 @@ class cloud_data_client_provider_base(base):
       kwargs["provider"] = self.get_default_provider()
     super().__init__(*args, **kwargs)
     
-    self._post_init(*args, **kwargs)
-
-  
-  def _post_init(self, *args, **kwargs):
-    pass
   
   def get_main_directory_name(self, *args, **kwargs):
     return "data_client"

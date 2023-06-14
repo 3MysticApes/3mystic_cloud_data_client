@@ -5,10 +5,6 @@ class cloud_data_client_general(base):
   def __init__(self, *args, **kwargs):
     super().__init__(logger_name= "cloud_data_client_general", *args, **kwargs)
   
-  # There is not post init when in Config Mode
-  def _post_init(self, *args, **kwargs):
-    pass
-  
 
   def action_config(self, *args, **kwargs): 
     
