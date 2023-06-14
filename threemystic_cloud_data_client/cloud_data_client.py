@@ -1,4 +1,4 @@
-from threemystic_common.base_class.base_provider import base
+from threemystic_cloud_data_client.cloud_providers.base_class.base import cloud_data_client_provider_base as base
 
 
 class cloud_data_client(base): 
@@ -44,9 +44,13 @@ class cloud_data_client(base):
       return
 
     if provider == "azure":
+      from threemystic_cloud_data_client.cloud_providers.azure.client import cloud_data_client_azure_client as cloud_data_client
+      self._client[provider] = cloud_data_client()
       return
     
     if provider == "aws":
+      from threemystic_cloud_data_client.cloud_providers.azure.client import cloud_data_client_azure_client as cloud_data_client
+      self._client[provider] = cloud_data_client()
       return  
        
     raise self.get_common().exception().exception(
@@ -57,15 +61,17 @@ class cloud_data_client(base):
       message = f"Unknown Cloud Provided: {provider}.\nSupported Cloud Providers{self.get_supported_providers()}"
     )
 
-  def client(self, provider, *args, **kwargs):
+  def client(self, provider = None, *args, **kwargs):
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value= provider):
-      raise self.get_common().exception().exception(
-        exception_type = "argument"
-      ).not_implemented(
-        logger = self.logger,
-        name = "provider",
-        message = f"provider cannot be null or whitespace"
-      )
+      provider = self.get_default_provider()
+      if self.get_common().helper_type().string().is_null_or_whitespace(string_value= provider):
+        raise self.get_common().exception().exception(
+          exception_type = "argument"
+        ).not_implemented(
+          logger = self.logger,
+          name = "provider",
+          message = f"provider cannot be null or whitespace"
+        )
   
     provider = self.get_common().helper_type().string().set_case(string_value= provider, case= "lower")
     if not hasattr(self, "_client"):

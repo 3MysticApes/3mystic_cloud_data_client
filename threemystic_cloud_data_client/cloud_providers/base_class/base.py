@@ -53,6 +53,9 @@ class cloud_data_client_provider_base(base):
 
   def action_config(self, *args, **kwargs):
     print("Provider config not configured")
+
+  def action_data(self, *args, **kwargs):
+    print("Provider config not configured")
   
   
     

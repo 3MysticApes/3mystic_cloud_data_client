@@ -26,7 +26,14 @@ class cloud_data_client_cli(base_process_options):
             "default": None, 
             "const": "config",
             "dest": "client_action",
-            "help": "Action: This is so you can setup the cloud client to work with various providers",
+            "help": "Action: This is so you can setup the data client",
+            "action": 'store_const'
+        },
+        "--data,-d": {
+            "default": None, 
+            "const": "data",
+            "dest": "client_action",
+            "help": "Action: Pull the various Data from the provider",
             "action": 'store_const'
         },
         "--provider,-p": {
@@ -36,7 +43,7 @@ class cloud_data_client_cli(base_process_options):
             "dest": "client_provider",
             "help": "Provider: This is to set the provider that should be used",
             "action": 'store'
-        }
+        },
       }
     )
 
@@ -57,7 +64,14 @@ class cloud_data_client_cli(base_process_options):
     
     if force_action == "config":
       from threemystic_cloud_data_client.cli.actions.config import cloud_data_client_config as user_action
-      user_action(cloud_client= self._cloud_data_client).main(provider= self._client_provider)
+      user_action(cloud_client= self._cloud_data_client).main(*args, **kwargs)
+      return
+    
+    if force_action == "data":
+      if not "provider" in kwargs:
+        if not self._cloud_data_client.get_common().helper_type().string().is_null_or_whitespace(string_value= self._client_provider):
+          kwargs["provider"] = self._client_provider
+      self._cloud_data_client.client(*args, **kwargs)
       return
 
 
