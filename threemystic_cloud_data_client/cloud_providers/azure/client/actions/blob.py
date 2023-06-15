@@ -1,43 +1,45 @@
 from threemystic_cloud_data_client.cloud_providers.azure.client.actions.base_class.base import cloud_data_client_azure_client_action_base as base
 import asyncio
-from azure.mgmt.compute import ComputeManagementClient
-from azure.mgmt.resource import ResourceManagementClient
-
+from azure.mgmt.storage import StorageManagementClient
 
 class cloud_data_client_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
-      data_action="vmss", 
-      logger_name= "cloud_data_client_azure_client_action_vmss", 
+      data_action="blob", 
+      logger_name= "cloud_data_client_azure_client_action_blob", 
       uniqueid_lambda = lambda: True
       *args, **kwargs)
   
   
     
-  async def __process_get_resources_vmss(self, account):
-    resource_client = ResourceManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
-    try:
-      return {resource.id: resource for resource in resource_client.resources.list(filter="resourceType eq 'Microsoft.Compute/virtualMachineScaleSets'", expand="createdTime,changedTime,provisioningState")}
-    except:
-      return []
-        
-  async def _process_account_data(self, account, loop, *args, **kwargs):
-    client = ComputeManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
-    tasks = {
-      "resource": loop.create_task(self.__process_get_resources_vmss(account= account))
+  async def _process_account_data_blob_containers(self, client:StorageManagementClient, resource_group, account_name, **kwargs):
+      try:
+        return [self.get_cloud_client().serialize_azresource(resource= item) for item in self.get_cloud_client().sdk_request(
+          tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+          lambda_sdk_command=lambda: client.blob_containers.list(resource_group_name= resource_group, account_name= account_name)
+        )]
+      except:
+        return []
+
+  async def _process_account_data(self, account, loop, **kwargs):
+    client = StorageManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
+    storage_accounts = [ account for account in self.get_cloud_client().sdk_request(
+      tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+      lambda_sdk_command=lambda: client.storage_accounts.list()
+    )]
+    blob_containers = {
+      self.get_cloud_client().get_resource_id_from_resource(resource= account): loop.create_task(self._process_account_data_blob_containers(client= client,  resource_group= self.get_cloud_client().get_resource_group_from_resource(resource= account), account_name= self.get_cloud_client().get_resource_name_from_resource(resource= account))) for account in storage_accounts
     }
-
-    await asyncio.wait(tasks.values())
-
+    
+    if len(blob_containers) > 0:
+      await asyncio.wait(blob_containers.values())
     return {
-      "account": account,
-      "data": [ self.get_common().helper_type().dictionary().merge_dictionary({
-        "extra_account": self.get_cloud_client().serialize_azresource(resource= account),
-        "extra_region": self.get_cloud_client().get_azresource_location(resource= item),
-        "extra_resourcegroups": [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
-        "extra_id": self.get_cloud_client().get_resource_id_from_resource(resource= item),
-        "extra_resource": self.get_cloud_client().serialize_azresource(resource= tasks["resource"].result().get(item.id)),
-        "extra_vmss_vms": [ self.get_cloud_client().serialize_azresource(resource= vm) for vm in client.virtual_machine_scale_set_vms.list(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= item), virtual_machine_scale_set_name= item.name) ]
-
-      }, self.get_cloud_client().serialize_azresource(resource= item)) for item in client.virtual_machine_scale_sets.list_all()]
+        "account": account,
+        "data": [ self.get_common().helper_type().dictionary().merge_dictionary({
+            "extra_account": self.get_cloud_client().serialize_azresource(resource= account),
+            "extra_region": self.get_cloud_client().get_azresource_location(resource= item),
+            "extra_resourcegroups": [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
+            "extra_id": self.get_cloud_client().get_resource_id_from_resource(resource= item),
+            "extra_blobcontainers": blob_containers[self.get_cloud_client().get_resource_id_from_resource(resource= item)].result() if blob_containers.get(self.get_cloud_client().get_resource_id_from_resource(resource= item)) is not None else []
+        }, self.get_cloud_client().serialize_azresource(resource= item)) for item in storage_accounts]
     }

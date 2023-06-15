@@ -11,7 +11,7 @@ class cloud_data_client_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
       data_action="storage", 
-      logger_name= "cloud_data_client_azure_client_action_vmss", 
+      logger_name= "cloud_data_client_azure_client_action_storage", 
       uniqueid_lambda = lambda: True
       *args, **kwargs)
   
@@ -273,7 +273,10 @@ class cloud_data_client_azure_client_action(base):
   async def __get_account_disks(self, account, cost_by_resource, loop, *args, **kwarg):
     client = ComputeManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
 
-    disk_tasks = [ loop.create_task(self.__get_account_disk_merged(account= account, cost_by_resource= cost_by_resource, item= item, loop= loop)) for item in client.disks.list()]
+    disk_tasks = [ loop.create_task(self.__get_account_disk_merged(account= account, cost_by_resource= cost_by_resource, item= item, loop= loop)) for item in self.get_cloud_client().sdk_request(
+           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+           lambda_sdk_command=lambda: client.disks.list()
+          )]
     if len(disk_tasks) < 1:
       return []
     await asyncio.wait(disk_tasks)

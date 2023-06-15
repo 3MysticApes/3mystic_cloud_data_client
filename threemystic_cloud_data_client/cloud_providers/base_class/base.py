@@ -31,6 +31,9 @@ class cloud_data_client_provider_base(base):
     self._config_data = self.__load_config()    
     return self.get_config(*args, **kwargs)
 
+  def _update_config(self,config_key, config_value, refresh= False,  *args, **kwargs):
+     self.get_config(refresh = True)[config_key] = config_value
+     
   def _save_config(self, *args, **kwargs):
      if not self.config_path().parent.exists():
        self.config_path().parent.mkdir(parents= True)
@@ -38,6 +41,22 @@ class cloud_data_client_provider_base(base):
       data= self.get_common().helper_yaml().dumps(data= self.get_config())
      )
      self.get_config(refresh = True) 
+  
+  def set_default_fiscal_year_start(self, value, refresh = False, *args, **kwargs):
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value=value):
+      value = self.get_default_fiscal_year_start(refresh= refresh)
+
+    self.get_config(refresh= refresh)["fiscal_year_start"] = value
+    self._save_config()
+  
+  def get_default_fiscal_year_start(self, refresh = False, *args, **kwargs):
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value=self.get_config(refresh= refresh).get("fiscal_year_start")):
+      return "01/01"
+    
+    if self.get_common().helper_type().datetime().datetime_from_string(dt_string= f'{self.get_common().helper_type().datetime().get().year}/{self.get_config().get("default_output_format")}') is not None:
+      return "01/01"
+    
+    return self.get_common().helper_type().string().set_case(string_value= self.get_config().get("fiscal_year_start"), case= "lower")
   
   def get_default_output_format(self, refresh = False, *args, **kwargs):
     
@@ -50,6 +69,9 @@ class cloud_data_client_provider_base(base):
     return self.get_common().helper_type().string().set_case(string_value= self.get_config().get("default_output_format"), case= "lower")
   
   def set_default_output_format(self, value, refresh = False, *args, **kwargs):
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value=value):
+      value = self.get_default_output_format(refresh= refresh)
+
     self.get_config(refresh= refresh)["default_output_format"] = value
     self._save_config()
   

@@ -35,12 +35,25 @@ class cloud_data_client_general_config_step_1(base):
             "default": self.get_default_output_format(),
             "handler": generate_data_handlers.get_handler(handler= "base"),
             "optional": not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_default_output_format())
+        },        
+        "fiscal_year_start": {
+            "validation": lambda item: not self.get_common().helper_type().string().is_null_or_whitespace(string_value= item) and self.get_common().helper_type().datetime().datetime_from_string(dt_string= f'{self.get_common().helper_type().datetime().get().year}/{item}') is not None,
+            "messages":{
+              "validation": f"Please provide a valid date in the following format mm/dd",
+            },
+            "conversion": lambda item: self.get_common().helper_type().string().set_case(string_value= item, case= "lower"),
+            "desc": f"What is the fiscal year start date? ex mm/dd (10/01)",
+            "default": self.get_default_fiscal_year_start(),
+            "handler": generate_data_handlers.get_handler(handler= "base"),
+            "optional": not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_default_fiscal_year_start())
         }
       }
     )
 
     if(response is not None):
-      self.set_default_provider(value= response.get("default_provider").get("formated"))
+      for key, item in response.items():
+        self._update_config(config_key= key, config_value= item.get("formated"))
+      self._save_config()
       print("-----------------------------")
       print()
       print()
