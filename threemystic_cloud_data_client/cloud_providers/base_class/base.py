@@ -9,7 +9,7 @@ class cloud_data_client_provider_base(base):
     
   
   def get_main_directory_name(self, *args, **kwargs):
-    return "data_client"
+    return "data_client"  
 
   def __load_config(self, *args, **kwargs):
     config_data = self.get_common().helper_config().load(
@@ -38,6 +38,20 @@ class cloud_data_client_provider_base(base):
       data= self.get_common().helper_yaml().dumps(data= self.get_config())
      )
      self.get_config(refresh = True) 
+  
+  def get_default_output_format(self, refresh = False, *args, **kwargs):
+    
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value=self.get_config(refresh= refresh).get("default_output_format")):
+      return "json"
+    
+    if self.get_common().helper_type().string().set_case(string_value= self.get_config().get("default_output_format"), case= "lower") not in self.get_supported_output_format():
+      return "json"
+    
+    return self.get_common().helper_type().string().set_case(string_value= self.get_config().get("default_output_format"), case= "lower")
+  
+  def set_default_output_format(self, value, refresh = False, *args, **kwargs):
+    self.get_config(refresh= refresh)["default_output_format"] = value
+    self._save_config()
   
   def get_default_provider(self, refresh = False, *args, **kwargs):
     return self.get_config(refresh= refresh).get("default_provider")

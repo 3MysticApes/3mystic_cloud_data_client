@@ -24,6 +24,17 @@ class cloud_data_client_general_config_step_1(base):
             "default": self.get_default_provider(),
             "handler": generate_data_handlers.get_handler(handler= "base"),
             "optional": not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_default_provider())
+        },        
+        "default_output_format": {
+            "validation": lambda item: self.get_common().helper_type().string().set_case(string_value= item, case= "lower") in self.get_supported_output_format(),
+            "messages":{
+              "validation": f"Valid options are: {self.get_supported_output_format()}",
+            },
+            "conversion": lambda item: self.get_common().helper_type().string().set_case(string_value= item, case= "lower"),
+            "desc": f"What is the default output format.\nValid Options: {self.get_supported_output_format()}",
+            "default": self.get_default_output_format(),
+            "handler": generate_data_handlers.get_handler(handler= "base"),
+            "optional": not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_default_output_format())
         }
       }
     )

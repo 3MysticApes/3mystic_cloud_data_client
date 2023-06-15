@@ -38,6 +38,7 @@ class cloud_data_client(base):
     if provider == "azure":
       from threemystic_cloud_data_client.cloud_providers.azure.client import cloud_data_client_azure_client as provider_cloud_data_client
       self._client[provider] = provider_cloud_data_client(
+        cloud_data_client= self,
         cloud_client = cloud_client(
           logger= self.get_logger(), 
           common= self.get_common()
@@ -48,6 +49,7 @@ class cloud_data_client(base):
     if provider == "aws":
       from threemystic_cloud_data_client.cloud_providers.azure.client import cloud_data_client_azure_client as provider_cloud_data_client
       self._client[provider] = provider_cloud_data_client(
+        cloud_data_client= self,
         cloud_client = cloud_client(
           logger= self.get_logger(), 
           common= self.get_common()

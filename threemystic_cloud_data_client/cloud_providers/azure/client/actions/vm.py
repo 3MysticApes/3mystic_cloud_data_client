@@ -33,7 +33,7 @@ class cloud_data_client_azure_client_action(base):
         "account": account,
         "data": [ self.get_common().helper_type().dictionary().merge_dictionary({
             "extra_account": self.get_cloud_client().serialize_azresource(resource= account),
-            "extra_region": item.location,
+            "extra_region": self.get_cloud_client().get_azresource_location(resource= item),
             "extra_resourcegroups": [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
             "extra_id": self.get_cloud_client().get_resource_id_from_resource(resource= item),
             "extra_resource": self.get_cloud_client().serialize_azresource(resource= tasks["resource"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item))),

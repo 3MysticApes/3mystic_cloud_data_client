@@ -9,7 +9,7 @@ class cloud_data_client_provider_base_data(base):
     
     
     
-    self._set_cloud_client(*args, **kwargs)
+    self._set_cloud_data_client(*args, **kwargs)
     self._set_client_name(*args, **kwargs)
     self._set_resource_uniqueid_lambda(*args, **kwargs)
     self._set_max_process_pool(*args, **kwargs)
@@ -35,10 +35,13 @@ class cloud_data_client_provider_base_data(base):
     self._max_thread_pool = max_thread_pool
   
   def get_cloud_client(self, *args, **kwargs):
-    return self._cloud_client
+    return self.get_cloud_data_client().get_cloud_client()
   
-  def _set_cloud_client(self, cloud_client, *args, **kwargs):
-    self._cloud_client = cloud_client
+  def get_cloud_data_client(self, *args, **kwargs):
+    return self._cloud_data_client
+  
+  def _set_cloud_data_client(self, cloud_data_client, *args, **kwargs):
+    self._cloud_data_client = cloud_data_client
 
   def get_client_name(self, *args, **kwargs):
     return self._client_name
@@ -59,10 +62,13 @@ class cloud_data_client_provider_base_data(base):
   def get_accounts(self):
     pass
   
-  def format_results(self, results, format_as = "json", *args, **kwargs):        
+  def format_results(self, results, output_format = None, *args, **kwargs):        
+    if output_format is None or (self.get_common().helper_type().string().set_case(string_value= output_format, case= "lower") not in self.get_supported_output_format()):
+      output_format = "json"
+    
     try:
-      if format_as == "json":
-        print( self.get_common().helper_json().dumps(data= results, indent=2))
+      if output_format == "yaml":
+        print(self.get_common().helper_yaml().dumps(data= results))
         return
         # print(results)
         # work in progress
@@ -79,6 +85,9 @@ class cloud_data_client_provider_base_data(base):
         #   tabular_data= tablulate_data, 
         #   headers= headers,
         # ))
+      
+      print( self.get_common().helper_json().dumps(data= results, indent=2))
+      return
         
     
     

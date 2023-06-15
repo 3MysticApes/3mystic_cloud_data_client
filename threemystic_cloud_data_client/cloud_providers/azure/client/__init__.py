@@ -5,7 +5,7 @@ import asyncio
 class cloud_data_client_azure_client(base):
   def __init__(self, *args, **kwargs):
     super().__init__(provider= "azure", logger_name= "cloud_data_client_azure_client", *args, **kwargs)
-
+    
     process_options = base_process_options(common= self.get_common())
     parser = process_options.get_parser(
       parser_init_kwargs = self._default_parser_init,
@@ -24,9 +24,9 @@ class cloud_data_client_azure_client(base):
     
     data_action = __import__(f"threemystic_cloud_data_client.cloud_providers.azure.client.actions.{processed_info['processed_data'].get('data_action')}", fromlist=['cloud_data_client_azure_client_action'])
     process_data_action = getattr(data_action, 'cloud_data_client_azure_client_action')(
-      cloud_client= self.get_cloud_client(),
+      cloud_data_client= self,
       common= self.get_common(),
       logger= self.get_common().get_logger()
     )
     results = asyncio.run(process_data_action.main())
-    process_data_action.format_results(results= results)
+    process_data_action.format_results(results= results, output_format= self.get_cloud_data_client().get_default_output_format())
