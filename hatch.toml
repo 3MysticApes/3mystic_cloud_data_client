@@ -1,0 +1,42 @@
+# reference can be found 
+# https://github.com/pypa/hatch/blob/master/hatch.toml
+
+[envs.default]
+dependencies = [
+  "coverage[toml]>=6.2",
+  "filelock>=3.7.1",
+  "pytest",
+  "pytest-cov",
+  "pytest-mock",
+  "pytest-randomly",
+  "pytest-rerunfailures",
+  "pytest-xdist",
+  "trustme",
+]
+
+[envs.lint]
+detached = true
+dependencies = [
+  "black>=22.6.0",
+  "mypy>=0.990",
+  "ruff>=0.0.202",
+]
+
+[envs.lint.scripts]
+typing = "mypy --install-types --non-interactive {args:src/threemystic_common tests}"
+style = [
+  "ruff {args:.}",
+  "black --check --diff {args:.}",
+]
+fmt = [
+  "black {args:.}",
+  "ruff --fix {args:.}",
+  "style",
+]
+all = [
+  "style",
+  "typing",
+]
+
+[envs.release]
+detached = true
