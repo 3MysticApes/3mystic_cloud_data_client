@@ -10,7 +10,7 @@ from threemystic_cloud_data_client.cloud_providers.azure.client.actions.vmss imp
 class cloud_data_client_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
-      data_action="vmss", 
+      data_action="storage", 
       logger_name= "cloud_data_client_azure_client_action_vmss", 
       uniqueid_lambda = lambda: True
       *args, **kwargs)
@@ -18,7 +18,7 @@ class cloud_data_client_azure_client_action(base):
   
     
   def __get_cost_by_resource_query_definition_mtd(self):
-    mtd = self.cloud_client.get_default_querydefinition()
+    mtd = self.get_cloud_client().get_default_querydefinition()
     mtd.timeframe = TimeframeType.MONTH_TO_DATE
 
     mtd.dataset.filter = QueryFilter(
@@ -135,7 +135,7 @@ class cloud_data_client_azure_client_action(base):
     if self.__vm is None:
       return None
     
-    account_id = self.get_account_id(account= account)
+    account_id = self.get_cloud_client().get_account_id(account= account)
     if self.__vm.get(account_id) is None:
       return None
 
@@ -154,7 +154,7 @@ class cloud_data_client_azure_client_action(base):
     if self.__vmss is None:
       return None
 
-    account_id = self.get_account_id(account= account)
+    account_id = self.get_cloud_client().get_account_id(account= account)
     if self.__vmss.get(account_id) is None:
       return None
     
@@ -188,16 +188,16 @@ class cloud_data_client_azure_client_action(base):
     return return_data
 
   async def __get_account_disk_merged(self, account, cost_by_resource, item, loop, *args, **kwarg):
-    return self.common.merge_dictionary({
-          "extra_account": self.common.serialize_azresource(account),
-          "extra_region": item.location,
-          "extra_resourcegroups": [self.common.get_resource_group_from_resource(item)],
-          "extra_id": self.common.get_resource_id_from_resource(item),
+    return self.get_common().helper_type().dictionary().merge_dictionary({
+          "extra_account": self.get_cloud_client().serialize_azresource(resource= account),
+          "extra_region": self.get_cloud_client().get_azresource_location(resource= item),
+          "extra_resourcegroups": [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
+          "extra_id": self.get_cloud_client().get_resource_id_from_resource(resource= item),
           "extra_attached_devices": (await self.__get_attached_devices(account=account, disk= item, loop= loop)),
           "extra_resource_cost": {
-            period: cost_by_resource_results.get(self.common.get_resource_id_from_resource(item)) for period, cost_by_resource_results in cost_by_resource.items()
+            period: cost_by_resource_results.get(self.get_cloud_client().get_resource_id_from_resource(resource= item)) for period, cost_by_resource_results in cost_by_resource.items()
           }
-        }, self.common.serialize_azresource(item))
+        }, self.get_cloud_client().serialize_azresource(resource= item))
 
   def __process_vmss_vm_disks_skip(self, vm: VirtualMachineScaleSetVM, *args, **kwarg):
     if not hasattr(vm, "storage_profile"):
@@ -237,7 +237,7 @@ class cloud_data_client_azure_client_action(base):
       }
 
     }
-    os_disk = self.common.deserialize_azresource(
+    os_disk = self.get_cloud_client().deserialize_azresource(
       aztype= Disk,
       resource= os_disk_data
     )
@@ -254,14 +254,14 @@ class cloud_data_client_azure_client_action(base):
 
   async def __get_account_vmss_disks(self, account, cost_by_resource, loop, *args, **kwarg):
     return_disks = []
-    account_id = self.get_account_id(account= account)
+    account_id = self.get_cloud_client().get_account_id(account= account)
 
     for vmss in self.__vmss[account_id]:
       for vm in vmss["extra_vmss_vms"]:
-        vm_object = self.common.deserialize_azresource(aztype= VirtualMachineScaleSetVM, resource= vm)
+        vm_object = self.get_cloud_client().deserialize_azresource(aztype= VirtualMachineScaleSetVM, resource= vm)
         if self.__process_vmss_vm_disks_skip(vm=vm_object):
           continue
-        return_disks += (await self.__process_vmss_vm_disks(vm= vm_object, vmss= self.common.deserialize_azresource(aztype= VirtualMachineScaleSet, resource= vmss)))
+        return_disks += (await self.__process_vmss_vm_disks(vm= vm_object, vmss= self.get_cloud_client().deserialize_azresource(aztype= VirtualMachineScaleSet, resource= vmss)))
     
     disk_tasks = [ loop.create_task(self.__get_account_disk_merged(account= account, cost_by_resource= cost_by_resource, item= item, loop= loop)) for item in return_disks]
     if len(disk_tasks) < 1:
@@ -281,19 +281,19 @@ class cloud_data_client_azure_client_action(base):
 
 
   async def _process_account_data(self, account, loop, *args, **kwarg):
-    account_id = self.get_account_id(account= account)
     cost_by_resource = {}
-    if not self.processed_options_as_dictionary["output_exclude_cost"]:
-      for period, query in self.__cost_by_resource_query_definition.items():
-        cost_by_resource[period] = {}
-        resource_cost_details = self.cloud_client.get_costmanagement_subscription(subscription= account, query_definition= query)
-        if resource_cost_details is not None:
-          for row in resource_cost_details.rows:
-            if cost_by_resource[period].get(row[1].lower()) is None:
-              cost_by_resource[period][row[1].lower()] = row[0]
-              continue
+    
+    for period, query in self.__cost_by_resource_query_definition.items():
+      cost_by_resource[period] = {}
+      resource_cost_details = self.get_cloud_client().get_costmanagement_account(account= account, query_definition= query)
+      
+      if resource_cost_details is not None:
+        for row in resource_cost_details.rows:
+          if cost_by_resource[period].get(row[1].lower()) is None:
+            cost_by_resource[period][row[1].lower()] = row[0]
+            continue
 
-            cost_by_resource[period][row[1].lower()] += row[0]
+          cost_by_resource[period][row[1].lower()] += row[0]
           
     
     return {

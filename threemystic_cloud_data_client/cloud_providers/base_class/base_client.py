@@ -19,6 +19,27 @@ class cloud_data_client_provider_base_client(base):
     }
 
     self._default_parser_args = {
+      "--blob": {
+        "default": None, 
+        "const": "blob",
+        "dest": "data_action",
+        "help": "Data Action: This pulls Cloud Storage (S3/Storage Accounts) for the provider",
+        "action": 'store_const'
+      },
+      "--budget": {
+        "default": None, 
+        "const": "budget",
+        "dest": "data_action",
+        "help": "Data Action: This pulls a general budget to provide you insights in your accounts/subscriptions",
+        "action": 'store_const'
+      },
+      "--storage": {
+        "default": None, 
+        "const": "storage",
+        "dest": "data_action",
+        "help": "Data Action: This pulls either VM Disks or EC2 Storage depending on the provider",
+        "action": 'store_const'
+      },
       "--vm": {
         "default": None, 
         "const": "vm",
@@ -31,20 +52,6 @@ class cloud_data_client_provider_base_client(base):
         "const": "vmss",
         "dest": "data_action",
         "help": "Data Action: This pulls either ASG or VMSS depending on the provider",
-        "action": 'store_const'
-      },
-      "--storage": {
-        "default": None, 
-        "const": "vmss",
-        "dest": "data_action",
-        "help": "Data Action: This pulls either VM Disks or EC2 Storage depending on the provider",
-        "action": 'store_const'
-      },
-      "--blob": {
-        "default": None, 
-        "const": "vmss",
-        "dest": "data_action",
-        "help": "Data Action: This pulls Cloud Storage (S3/Storage Accounts) for the provider",
         "action": 'store_const'
       }
     }

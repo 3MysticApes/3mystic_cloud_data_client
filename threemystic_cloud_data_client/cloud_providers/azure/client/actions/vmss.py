@@ -17,7 +17,11 @@ class cloud_data_client_azure_client_action(base):
   async def __process_get_resources_vmss(self, account):
     resource_client = ResourceManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     try:
-      return {resource.id: resource for resource in resource_client.resources.list(filter="resourceType eq 'Microsoft.Compute/virtualMachineScaleSets'", expand="createdTime,changedTime,provisioningState")}
+      return { resource.id: resource for resource in self.get_cloud_client().sdk_request(
+          tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+          lambda_sdk_command=lambda: resource_client.resources.list(filter="resourceType eq 'Microsoft.Compute/virtualMachineScaleSets'", expand="createdTime,changedTime,provisioningState")
+        )
+      }
     except:
       return []
         
@@ -39,5 +43,9 @@ class cloud_data_client_azure_client_action(base):
         "extra_resource": self.get_cloud_client().serialize_azresource(resource= tasks["resource"].result().get(item.id)),
         "extra_vmss_vms": [ self.get_cloud_client().serialize_azresource(resource= vm) for vm in client.virtual_machine_scale_set_vms.list(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= item), virtual_machine_scale_set_name= item.name) ]
 
-      }, self.get_cloud_client().serialize_azresource(resource= item)) for item in client.virtual_machine_scale_sets.list_all()]
+      }, self.get_cloud_client().serialize_azresource(resource= item)) for item in self.get_cloud_client().sdk_request(
+          tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+          lambda_sdk_command=lambda: client.virtual_machine_scale_sets.list_all()
+        )
+      ]
     }
