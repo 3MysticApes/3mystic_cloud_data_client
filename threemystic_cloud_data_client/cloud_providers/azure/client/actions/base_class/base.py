@@ -5,5 +5,5 @@ class cloud_data_client_azure_client_action_base(base):
     super().__init__(provider= "azure", *args, **kwargs)  
 
   def get_accounts(self, *args, **kwargs):
-    return [ account for account in self.get_cloud_client().get_accounts() ]
-    # return [ account for account in self.get_cloud_client().get_accounts() if account.resource_container ]
+    # return [ account for account in self.get_cloud_client().get_accounts() ]
+    return [ account for account in self.get_cloud_client().get_accounts() if account.resource_container ]

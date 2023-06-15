@@ -28,4 +28,5 @@ class cloud_data_client_azure_client(base):
       common= self.get_common(),
       logger= self.get_common().get_logger()
     )
-    asyncio.run(process_data_action.main())
+    results = asyncio.run(process_data_action.main())
+    process_data_action.format_results(results= results)

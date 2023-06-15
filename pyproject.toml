@@ -32,6 +32,9 @@ dependencies = [
   "typing-extensions >= 4.4.0",
   "asyncio >= 3.4.3",
   "tqdm >= 4.65.0",
+  "azure-mgmt-subscription >= 3.1.1",
+  "azure-mgmt-managementgroups >= 1.0.0",
+  "azure-mgmt-resourcegraph >= 8.0.0"
 
 ]
 dynamic = ["version"]
