@@ -35,10 +35,13 @@ class cloud_data_client_provider_base_data(base):
     self._max_thread_pool = max_thread_pool
   
   def get_cloud_client(self, *args, **kwargs):
-    return self.get_cloud_data_client().get_cloud_client()
+    return self.__get_cloud_data_client_raw().get_cloud_client()
+  
+  def __get_cloud_data_client_raw(self, *args, **kwargs):
+    return self._cloud_data_client
   
   def get_cloud_data_client(self, *args, **kwargs):
-    return self._cloud_data_client
+    return self.__get_cloud_data_client_raw().get_cloud_data_client()
   
   def _set_cloud_data_client(self, cloud_data_client, *args, **kwargs):
     self._cloud_data_client = cloud_data_client

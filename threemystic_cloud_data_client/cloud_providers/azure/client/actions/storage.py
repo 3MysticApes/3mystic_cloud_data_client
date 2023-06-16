@@ -3,6 +3,7 @@ import asyncio
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.costmanagement.models import TimeframeType, OperatorType, QueryColumnType, QueryDefinition, QueryTimePeriod, QueryDataset, QueryAggregation, QueryGrouping, QueryFilter, QueryComparisonExpression
 from azure.mgmt.compute.models import VirtualMachineScaleSet, VirtualMachineScaleSetVM, Disk
+from azure.mgmt.costmanagement import CostManagementClient
 
 from threemystic_cloud_data_client.cloud_providers.azure.client.actions.vm import cloud_data_client_azure_client_action as vm_action
 from threemystic_cloud_data_client.cloud_providers.azure.client.actions.vmss import cloud_data_client_azure_client_action as vmss_action
@@ -41,8 +42,8 @@ class cloud_data_client_azure_client_action(base):
     ytd = self.__get_cost_by_resource_query_definition_mtd()
     ytd.timeframe = TimeframeType.CUSTOM
     ytd.time_period = QueryTimePeriod(
-      from_property= self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_common().helper_type().datetime().get().year}-01-01T00:00:00+00:00"),
-      to=  self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_common().helper_type().datetime().get().year}-12-31T23:59:59+00:00")      
+      from_property= self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_data_start().year}-01-01T00:00:00+00:00"),
+      to=  self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_data_start().year}-12-31T23:59:59+00:00")      
     )
 
     ytd.dataset.filter = QueryFilter(
@@ -285,11 +286,21 @@ class cloud_data_client_azure_client_action(base):
 
   async def _process_account_data(self, account, loop, *args, **kwarg):
     cost_by_resource = {}
-    
+    costmanagement_client = CostManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
+
     for period, query in self.__cost_by_resource_query_definition.items():
       cost_by_resource[period] = {}
-      resource_cost_details = self.get_cloud_client().get_costmanagement_account(account= account, query_definition= query)
-      
+      try:
+        resource_cost_details = self.get_cloud_client().sdk_request(
+          tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+          lambda_sdk_command=lambda: costmanagement_client.query.usage(
+            scope= f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
+            parameters= query,
+          )
+        )
+      except:
+        resource_cost_details = None
+
       if resource_cost_details is not None:
         for row in resource_cost_details.rows:
           if cost_by_resource[period].get(row[1].lower()) is None:

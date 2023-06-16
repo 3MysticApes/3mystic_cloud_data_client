@@ -14,7 +14,7 @@ class cloud_data_client_azure_client_action(base):
   
   
     
-  async def __process_get_resources_vmss(self, account):
+  async def __process_get_resources_vmss(self, account, *args, **kwargs):
     resource_client = ResourceManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     try:
       return { resource.id: resource for resource in self.get_cloud_client().sdk_request(
