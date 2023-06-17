@@ -10,7 +10,7 @@ class cloud_data_client_provider_base_client(base):
     self.__set_cloud_client(*args, **kwargs)
     self.__set_cloud_data_client(*args, **kwargs)
     self.__set_suppres_parser_help(*args, **kwargs)
-    
+    print(kwargs)
     self._default_parser_init = {
       "prog": f'3mystic_cloud_data_client -d -p {kwargs["provider"]}',
       "formatter_class": argparse.RawDescriptionHelpFormatter,
@@ -21,11 +21,51 @@ class cloud_data_client_provider_base_client(base):
       "add_help": False,
       "epilog": ""
     }
-
+  
     self._set_action_from_arguments(force_action_arguments= force_action_arguments, *args, **kwargs)
     
     self._set_data_action()
 
+  @classmethod
+  def get_default_parser_args(cls, *args, **kwargs):
+    return {
+      "--blob": {
+        "default": None, 
+        "const": "blob",
+        "dest": "data_action",
+        "help": "Data Action: This pulls Cloud Storage (S3/Storage Accounts) for the provider",
+        "action": 'store_const'
+      },
+      "--budget": {
+        "default": None, 
+        "const": "budget",
+        "dest": "data_action",
+        "help": "Data Action: This pulls a general budget to provide you insights in your accounts/subscriptions",
+        "action": 'store_const'
+      },
+      "--storage": {
+        "default": None, 
+        "const": "storage",
+        "dest": "data_action",
+        "help": "Data Action: This pulls either VM Disks or EC2 Storage depending on the provider",
+        "action": 'store_const'
+      },
+      "--vm": {
+        "default": None, 
+        "const": "vm",
+        "dest": "data_action",
+        "help": "Data Action: This pulls either EC2 or VM depending on the provider",
+        "action": 'store_const'
+      },
+      "--vmss": {
+        "default": None, 
+        "const": "vmss",
+        "dest": "data_action",
+        "help": "Data Action: This pulls either ASG or VMSS depending on the provider",
+        "action": 'store_const'
+      }
+    }
+  
   def get_suppres_parser_help(self, *args, **kwargs):
     if hasattr(self, "_suppres_parser_help"):
       return self._suppres_parser_help
@@ -113,49 +153,10 @@ class cloud_data_client_provider_base_client(base):
   
   def run(self, *args, **kwargs):
     if self.get_data_action() is None:
-      return
+      return 
 
     results = asyncio.run(self.get_data_action().main())
     self.get_data_action().format_results(results= results, output_format= self.get_cloud_data_client().get_default_output_format())
-
-  def get_default_parser_args(self, *args, **kwargs):
-    return {
-      "--blob": {
-        "default": None, 
-        "const": "blob",
-        "dest": "data_action",
-        "help": "Data Action: This pulls Cloud Storage (S3/Storage Accounts) for the provider",
-        "action": 'store_const'
-      },
-      "--budget": {
-        "default": None, 
-        "const": "budget",
-        "dest": "data_action",
-        "help": "Data Action: This pulls a general budget to provide you insights in your accounts/subscriptions",
-        "action": 'store_const'
-      },
-      "--storage": {
-        "default": None, 
-        "const": "storage",
-        "dest": "data_action",
-        "help": "Data Action: This pulls either VM Disks or EC2 Storage depending on the provider",
-        "action": 'store_const'
-      },
-      "--vm": {
-        "default": None, 
-        "const": "vm",
-        "dest": "data_action",
-        "help": "Data Action: This pulls either EC2 or VM depending on the provider",
-        "action": 'store_const'
-      },
-      "--vmss": {
-        "default": None, 
-        "const": "vmss",
-        "dest": "data_action",
-        "help": "Data Action: This pulls either ASG or VMSS depending on the provider",
-        "action": 'store_const'
-      }
-    }
   
   def get_cloud_client(self, *args, **kwargs):
     return self.__cloud_client
