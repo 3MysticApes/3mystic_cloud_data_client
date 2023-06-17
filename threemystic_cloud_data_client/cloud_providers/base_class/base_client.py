@@ -9,6 +9,7 @@ class cloud_data_client_provider_base_client(base):
     super().__init__(*args, **kwargs)
     self.__set_cloud_client(*args, **kwargs)
     self.__set_cloud_data_client(*args, **kwargs)
+    self.__set_suppres_parser_help(*args, **kwargs)
     
     self._default_parser_init = {
       "prog": f'3mystic_cloud_data_client -d -p {kwargs["provider"]}',
@@ -24,6 +25,15 @@ class cloud_data_client_provider_base_client(base):
     self._set_action_from_arguments(force_action_arguments= force_action_arguments, *args, **kwargs)
     
     self._set_data_action()
+
+  def get_suppres_parser_help(self, *args, **kwargs):
+    if hasattr(self, "_suppres_parser_help"):
+      return self._suppres_parser_help
+    return False
+    
+
+  def __set_suppres_parser_help(self, suppress_parser_help = False, *args, **kwargs):
+    self._suppres_parser_help = suppress_parser_help
 
   def __get_action_parser_options(self, *args, **kwargs):
     if hasattr(self, "_action_process_options"):
@@ -61,7 +71,8 @@ class cloud_data_client_provider_base_client(base):
     )
 
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value= processed_info["processed_data"].get("data_action")):
-      self._get_action_parser().print_help()
+      if not self.get_suppres_parser_help():
+        self._get_action_parser().print_help()
       return None
     
     self._action_from_arguments = processed_info["processed_data"]
@@ -86,7 +97,8 @@ class cloud_data_client_provider_base_client(base):
     except Exception as err:
       print(f"The action {self.get_action_from_arguments().get('data_action')} is unknown")
       self.get_common().get_logger().exception(f"The action {self.get_action_from_arguments() .get('data_action')} is unknown", extra={"exception": err})
-      self._get_action_parser().print_help()
+      if not self.get_suppres_parser_help():
+        self._get_action_parser().print_help()
   
   def _process_data_action(self, provider, action, *args, **kwargs):    
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value= action):

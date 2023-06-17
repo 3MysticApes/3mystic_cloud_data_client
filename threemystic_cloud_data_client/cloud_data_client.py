@@ -44,7 +44,8 @@ class cloud_data_client(base):
         cloud_client = cloud_client(
           logger= self.get_logger(), 
           common= self.get_common()
-        ).client(provider= provider)
+        ).client(provider= provider),
+        *args, **kwargs
       )
       return
     
@@ -55,7 +56,8 @@ class cloud_data_client(base):
         cloud_client = cloud_client(
           logger= self.get_logger(), 
           common= self.get_common()
-        ).client(provider= provider)
+        ).client(provider= provider),
+        *args, **kwargs
       )
       return  
        
