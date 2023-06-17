@@ -42,6 +42,13 @@ class cloud_data_client_provider_base(base):
      )
      self.get_config(refresh = True) 
   
+  def get_config_value(self, config_key, default_if_none = None, refresh = False, *args, **kwargs):
+    config_value = self.get_config(refresh= refresh).get(config_key)
+    if config_value is not None:
+      return config_value
+    
+    return default_if_none
+  
   def set_default_fiscal_year_start(self, value, refresh = False, *args, **kwargs):
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value=value):
       value = self.get_default_fiscal_year_start(refresh= refresh)

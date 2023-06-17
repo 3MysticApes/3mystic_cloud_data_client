@@ -63,6 +63,10 @@ class cloud_data_client_cli(base_process_options):
       return
     
     if force_action == "config":
+      if not "provider" in kwargs:
+        if not self._cloud_data_client.get_common().helper_type().string().is_null_or_whitespace(string_value= self._client_provider):
+          kwargs["provider"] = self._client_provider
+          
       from threemystic_cloud_data_client.cli.actions.config import cloud_data_client_config as user_action
       user_action(cloud_client= self._cloud_data_client).main(*args, **kwargs)
       return
@@ -71,7 +75,7 @@ class cloud_data_client_cli(base_process_options):
       if not "provider" in kwargs:
         if not self._cloud_data_client.get_common().helper_type().string().is_null_or_whitespace(string_value= self._client_provider):
           kwargs["provider"] = self._client_provider
-      self._cloud_data_client.client(*args, **kwargs)
+      self._cloud_data_client.client(*args, **kwargs).run()
       return
 
 

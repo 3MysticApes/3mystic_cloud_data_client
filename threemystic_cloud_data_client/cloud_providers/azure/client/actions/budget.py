@@ -49,7 +49,7 @@ class cloud_data_client_azure_client_action(base):
       last_month_month = 12
       last_month_year -= 1
     
-    if total_by_month.get(f'{last_month_month}') is not None:
+    if total_by_month is not None and total_by_month.get(f'{last_month_month}') is not None:
       return total_by_month.get(f'{last_month_month}')
     
     filter = {
@@ -159,11 +159,10 @@ class cloud_data_client_azure_client_action(base):
       )
 
       if usage is None:
-        return usage
+        return {}
 
       return await self.__process_get_cost_data_daily_data(usage= usage)
     except Exception as err:
-      print(err)
       self.get_common().get_logger().exception(msg= f"{self.get_cloud_client().get_account_id(account= account)} - {str(err)}", extra={"exception": err})
       return None
   
@@ -171,6 +170,7 @@ class cloud_data_client_azure_client_action(base):
     total = Decimal(0)
     by_month = { f"{month}":None for month in range(1, 13)}
     by_day = { }
+    max_date = 0
     for cost_data in usage.rows:
       month = f'{self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(cost_data[1]), dt_format= "%Y%m%d").month}'
       if by_month.get(month) is None:
@@ -178,20 +178,32 @@ class cloud_data_client_azure_client_action(base):
       by_month[month] += Decimal(cost_data[0])
       total += Decimal(cost_data[0])
       by_day[str(cost_data[1])] = Decimal(cost_data[0])
+      if cost_data[1] > max_date:
+        max_date = cost_data[1]
     
     last_seven_day_total = Decimal(0)
-    seven_days_ago = self.get_common().helper_type().datetime().time_delta(days= -7)
-    for day in range(0,6):
-      print(self.get_common().helper_type().datetime().datetime_as_string(
-        dt= self.get_common().helper_type().datetime().time_delta(dt= seven_days_ago, days= 1),
+    seven_days_ago = self.get_common().helper_type().datetime().time_delta(
+      dt= self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(max_date), dt_format= "%Y%m%d"),
+      days= -6)
+    for day in range(0,7):
+      date_string = self.get_common().helper_type().datetime().datetime_as_string(
+        dt= self.get_common().helper_type().datetime().time_delta(dt= seven_days_ago, days= day),
         dt_format= "%Y%m%d"
-      ))
+      )
+      if by_day.get(date_string) is not None:
+        last_seven_day_total += by_day.get(date_string)
 
     return {
       "total": total.quantize(Decimal('.01'), ROUND_HALF_UP),
       "by_month": {month:value.quantize(Decimal('.01'), ROUND_HALF_UP) for month, value in by_month.items() if value is not None},
-      "last_seven_days": last_seven_day_total
+      "last_seven_days": last_seven_day_total.quantize(Decimal('.01'), ROUND_HALF_UP),
     }
+
+  def __process_get_cost_calculate_forecast_total(self, current_total, forecast_total, *args, **kwargs):
+    if current_total is None and forecast_total is None:
+      return None
+    
+    return forecast_total if current_total is None else current_total
 
   async def __process_get_cost_data(self, loop, fiscal_year_start, *args, **kwargs):
     fiscal_year_start_date = self.get_common().helper_type().datetime().datetime_from_string(
@@ -202,15 +214,30 @@ class cloud_data_client_azure_client_action(base):
     processed_ytd_data = await self.__process_get_cost_data_ytd(fiscal_year_start= fiscal_year_start_date, *args, **kwargs )
     processed_year_forecast = await self.__process_get_cost_data_forcast_year(fiscal_year_start= fiscal_year_start_date, *args, **kwargs )
 
+    if processed_ytd_data is None and processed_year_forecast is None:
+      return {
+      "year_to_date": None,  
+      "year_forecast": None,
+      "month_to_date": None,  
+      "month_forecast": None,
+      "last_seven_days": None,
+      "last_month": None,
+    }
     return_data = {
-      "year_to_date": processed_ytd_data["total"],      
-      "year_forecast": processed_year_forecast["total"] + processed_ytd_data["total"],
-      "month_to_date": processed_ytd_data["by_month"][f'{self.get_data_start().month}'],      
-      "month_forecast": processed_year_forecast["by_month"][f'{self.get_data_start().month}'] + processed_ytd_data["by_month"][f'{self.get_data_start().month}']
-      "last_seven_days": processed_ytd_data["last_seven_days"],  
+      "year_to_date": processed_ytd_data.get("total") if processed_ytd_data is not None else None,      
+      "year_forecast": self.__process_get_cost_calculate_forecast_total(
+        current_total= processed_ytd_data.get("total") if processed_ytd_data is not None else None,
+        forecast_total= processed_year_forecast.get("total") if processed_year_forecast is not None else None),
+      "month_to_date": processed_ytd_data.get("by_month").get(f'{self.get_data_start().month}') if processed_ytd_data is not None and processed_ytd_data.get("by_month") else None,      
+      "month_forecast": self.__process_get_cost_calculate_forecast_total(
+        current_total= processed_ytd_data.get("by_month").get(f'{self.get_data_start().month}') if processed_ytd_data is not None and processed_ytd_data.get("by_month") else None,
+        forecast_total= processed_year_forecast.get("by_month").get(f'{self.get_data_start().month}') if processed_year_forecast is not None and processed_year_forecast.get("by_month") else None),
+      "last_seven_days": processed_ytd_data.get("last_seven_days") if processed_ytd_data is not None else None,  
     }
     pending_tasks = {
-      "last_month": loop.create_task(self.__process_get_cost_data_last_month(total_by_month= processed_ytd_data["by_month"], *args, **kwargs ))
+      "last_month": loop.create_task(self.__process_get_cost_data_last_month(
+      total_by_month= processed_ytd_data.get("by_month") if processed_ytd_data is not None else None, 
+      *args, **kwargs ))
     }    
 
     await asyncio.wait(pending_tasks.values())
@@ -220,6 +247,7 @@ class cloud_data_client_azure_client_action(base):
     return return_data
 
   async def _process_account_data(self, account, loop, *args, **kwargs):
+    
 
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value= kwargs.get("fiscal_year_start")):
       kwargs["fiscal_year_start"] = self.get_cloud_data_client().get_default_fiscal_year_start()

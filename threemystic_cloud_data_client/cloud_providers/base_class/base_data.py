@@ -5,9 +5,7 @@ from tqdm.asyncio import tqdm
 
 class cloud_data_client_provider_base_data(base):
   def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    
-    
+    super().__init__(*args, **kwargs)   
     
     self._set_cloud_data_client(*args, **kwargs)
     self._set_client_name(*args, **kwargs)
