@@ -35,14 +35,16 @@ class cloud_data_client_azure_client_action(base):
 
     return {
         "account": account,
-        "data": [ self.get_common().helper_type().dictionary().merge_dictionary({
-            "extra_account": self.get_cloud_client().serialize_azresource(resource= account),
-            "extra_region": self.get_cloud_client().get_azresource_location(resource= item),
-            "extra_resourcegroups": [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
-            "extra_id": self.get_cloud_client().get_resource_id_from_resource(resource= item),
-            "extra_resource": self.get_cloud_client().serialize_azresource(resource= tasks["resource"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item))),
-
-        }, self.get_cloud_client().serialize_azresource(resource= item)) for item in self.get_cloud_client().sdk_request(
+        "data": [ self.get_common().helper_type().dictionary().merge_dictionary([
+          {},
+          self.get_base_return_data(
+            account= self.get_cloud_client().serialize_azresource(resource= account),
+            resource_id= self.get_cloud_client().get_resource_id_from_resource(resource= item),
+            resource= item,
+            region= self.get_cloud_client().get_azresource_location(resource= item),
+            resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
+          ),
+          {"extra_resource": self.common.serialize_azresource(tasks["resource"].result().get(item.id))},]) for item in self.get_cloud_client().sdk_request(
            tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
            lambda_sdk_command=lambda: client.virtual_machines.list_all()
           )

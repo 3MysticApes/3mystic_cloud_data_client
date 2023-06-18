@@ -10,7 +10,7 @@ class cloud_data_client_provider_base_client(base):
     self.__set_cloud_client(*args, **kwargs)
     self.__set_cloud_data_client(*args, **kwargs)
     self.__set_suppres_parser_help(*args, **kwargs)
-    print(kwargs)
+    
     self._default_parser_init = {
       "prog": f'3mystic_cloud_data_client -d -p {kwargs["provider"]}',
       "formatter_class": argparse.RawDescriptionHelpFormatter,
@@ -90,7 +90,8 @@ class cloud_data_client_provider_base_client(base):
     self._action_parser = self.__get_action_parser_options().get_parser(
       parser_init_kwargs = self._default_parser_init,
       parser_args = self.get_common().helper_type().dictionary().merge_dictionary([
-         self.get_default_parser_args(),
+        {},
+        self.get_default_parser_args(),
       ])
     )
     return self._get_action_parser()

@@ -260,14 +260,12 @@ class cloud_data_client_azure_client_action(base):
 
     return {
       "account": account,
-      "data": [ self.get_common().helper_type().dictionary().merge_dictionary({
-        "extra_account": self.get_cloud_client().serialize_azresource(resource= account),
-        "extra_region": None,
-        "extra_resourcegroups": None,
-        "extra_id": f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
-        "extra_resource": None,
-
-        }, 
+      "data": [ self.get_common().helper_type().dictionary().merge_dictionary([
+        {},
+        self.get_base_return_data(
+          account= self.get_cloud_client().serialize_azresource(resource= account),
+          resource_id =  f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
+        ),
         cost_data
-      )]
+      ])]
     }
