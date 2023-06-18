@@ -45,8 +45,8 @@ class cloud_data_client_azure_client_action(base):
             resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
           ),
           {
-            "extra_resource": self.common.serialize_azresource(tasks["resource"].result().get(item.id)),
-            "extra_vmss_vms": [ self.common.serialize_azresource(vm) for vm in client.virtual_machine_scale_set_vms.list(resource_group_name= self.common.get_resource_group_from_resource(item), virtual_machine_scale_set_name= item.name) ]
+            "extra_resource": self.get_cloud_client().serialize_azresource(tasks["resource"].result().get(item.id)),
+            "extra_vmss_vms": [ self.get_cloud_client().serialize_azresource(vm) for vm in client.virtual_machine_scale_set_vms.list(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(item), virtual_machine_scale_set_name= item.name) ]
           },
           ]) for item in self.get_cloud_client().sdk_request(
           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 

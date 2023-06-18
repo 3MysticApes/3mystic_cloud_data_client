@@ -44,7 +44,7 @@ class cloud_data_client_azure_client_action(base):
             region= self.get_cloud_client().get_azresource_location(resource= item),
             resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
           ),
-          {"extra_resource": self.common.serialize_azresource(tasks["resource"].result().get(item.id))},]) for item in self.get_cloud_client().sdk_request(
+          {"extra_resource": self.get_cloud_client().serialize_azresource(tasks["resource"].result().get(item.id))},]) for item in self.get_cloud_client().sdk_request(
            tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
            lambda_sdk_command=lambda: client.virtual_machines.list_all()
           )

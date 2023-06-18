@@ -65,7 +65,7 @@ class cloud_data_client_azure_client_action(base):
   async def _pre_load_main_process(self, pool, *args, **kwarg):
     self.__vm = None
     base_action_params = {
-      "cloud_data_client": self.get_cloud_data_client(),
+      "cloud_data_client": self._get_cloud_data_client_raw(),
       "common": self.get_common(),
       "logger": self.get_common().get_logger()
     }
@@ -121,7 +121,7 @@ class cloud_data_client_azure_client_action(base):
 
     for _, task in tasks.items():
       if task.result():
-        return self.common.merge_dictionary([
+        return self.get_common().helper_type().dictionary().merge_dictionary([
           {},
           {
           "extra_disk_group_type": "vm" if vmss is None else "vmss", 
