@@ -75,7 +75,6 @@ class cloud_data_client_provider_base_data(base):
         "extra_region": region,
         "extra_resourcegroups": resource_groups,
         "extra_id": resource_id,
-        "extra_resource": resource,
       },
       self.get_cloud_client().serialize_azresource(resource= resource) if resource is not None else {}
     ])
