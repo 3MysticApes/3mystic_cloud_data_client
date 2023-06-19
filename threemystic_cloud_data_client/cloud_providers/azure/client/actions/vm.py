@@ -17,7 +17,7 @@ class cloud_data_client_azure_client_action(base):
   async def __process_get_resources_vm(self, account, *args, **kwargs):
     resource_client = ResourceManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     try:
-        return {resource.id: resource for resource in self.get_cloud_client().sdk_request(
+        return {self.get_cloud_client().get_resource_id_from_resource(resource= resource): resource for resource in self.get_cloud_client().sdk_request(
            tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
            lambda_sdk_command=lambda: resource_client.resources.list(filter="resourceType eq 'Microsoft.Compute/virtualMachines'", expand="createdTime,changedTime,provisioningState")
           )
@@ -44,7 +44,7 @@ class cloud_data_client_azure_client_action(base):
             region= self.get_cloud_client().get_azresource_location(resource= item),
             resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
           ),
-          {"extra_resource": self.get_cloud_client().serialize_azresource(tasks["resource"].result().get(item.id))},]) for item in self.get_cloud_client().sdk_request(
+          {"extra_resource": self.get_cloud_client().serialize_azresource(tasks["resource"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item)))},]) for item in self.get_cloud_client().sdk_request(
            tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
            lambda_sdk_command=lambda: client.virtual_machines.list_all()
           )

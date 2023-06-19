@@ -2,7 +2,7 @@ from threemystic_cloud_data_client.cloud_providers.azure.client.actions.base_cla
 import asyncio
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.costmanagement.models import TimeframeType, OperatorType, QueryColumnType, QueryDefinition, QueryTimePeriod, QueryDataset, QueryAggregation, QueryGrouping, QueryFilter, QueryComparisonExpression
-from azure.mgmt.compute.models import VirtualMachineScaleSet, VirtualMachineScaleSetVM, Disk
+from azure.mgmt.compute.models import VirtualMachineScaleSet, VirtualMachineScaleSetVM, OSDisk, DataDisk
 from azure.mgmt.costmanagement import CostManagementClient
 
 from threemystic_cloud_data_client.cloud_providers.azure.client.actions.vm import cloud_data_client_azure_client_action as vm_action
@@ -227,33 +227,28 @@ class cloud_data_client_azure_client_action(base):
     return creationData
 
   async def __convert_vmss_vm_disks_disks(self, vmss:VirtualMachineScaleSet, vm: VirtualMachineScaleSetVM, *args, **kwarg):
-    os_disk_data = {
-      "id": vm.storage_profile.os_disk.managed_disk.id,
-      "name": vm.storage_profile.os_disk.name,
-      "location": vmss.location,
-      "tags": vmss.tags,
-      "sku": {
-        "name": vm.storage_profile.os_disk.managed_disk.storage_account_type,
-        "tier": vm.storage_profile.os_disk.managed_disk.storage_account_type.split('_')[0]
-      },
-      "type": "Microsoft.Compute/disks",
-      "properties": {
-        "osType": vm.storage_profile.os_disk.os_type,
-        'creationData': (self.__convert_vmss_vm_disks_disks_creationData(vm= vm)),
-        "diskSizeGB": vm.storage_profile.os_disk.disk_size_gb,
-        "diskSizeBytes": vm.storage_profile.os_disk.disk_size_gb * 1024 * 1024 * 1024,
-      }
 
-    }
-    os_disk = self.get_cloud_client().deserialize_azresource(
-      aztype= Disk,
-      resource= os_disk_data
-    )
-
+    return_disks = [
+      self.get_base_return_data(
+        resource_id= vm.storage_profile.os_disk.managed_disk.id,
+        resource= vm.storage_profile.os_disk,
+        region= self.get_cloud_client().get_azresource_location(resource= vmss),
+        resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= vmss)],
+      )
+    ]
+    
     if len(vm.storage_profile.data_disks) > 0:
-      raise Exception(f"vmss {vmss.name} - ({vmss.id}) has vm {vm.name} that has data disks. Update Script")
+      for disk in vm.storage_profile.data_disks:
+        return_disks.append(
+          self.get_base_return_data(
+            resource_id= disk.managed_disk.id,
+            resource= disk,
+            region= self.get_cloud_client().get_azresource_location(resource= vmss),
+            resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= vmss)],
+          )
+        )
 
-    return [os_disk]
+    return return_disks
 
   async def __process_vmss_vm_disks(self, vmss:VirtualMachineScaleSet, vm: VirtualMachineScaleSetVM, *args, **kwarg):
     return (await self.__convert_vmss_vm_disks_disks(vm= vm, vmss= vmss))
@@ -263,8 +258,9 @@ class cloud_data_client_azure_client_action(base):
   async def __get_account_vmss_disks(self, account, cost_by_resource, loop, *args, **kwarg):
     return_disks = []
     account_id = self.get_cloud_client().get_account_id(account= account)
-
-    for vmss in self.__vmss[account_id]:
+    if self.__vmss.get(account_id) is None:
+      return []
+    for vmss in self.__vmss.get(account_id):
       for vm in vmss["extra_vmss_vms"]:
         vm_object = self.get_cloud_client().deserialize_azresource(aztype= VirtualMachineScaleSetVM, resource= vm)
         if self.__process_vmss_vm_disks_skip(vm=vm_object):

@@ -29,9 +29,9 @@ class cloud_data_client_provider_base_client(base):
   @classmethod
   def get_default_parser_args(cls, *args, **kwargs):
     return {
-      "--blob": {
+      "--cloudstorage": {
         "default": None, 
-        "const": "blob",
+        "const": "cloudstorage",
         "dest": "data_action",
         "help": "Data Action: This pulls Cloud Storage (S3/Storage Accounts) for the provider",
         "action": 'store_const'
