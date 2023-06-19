@@ -12,49 +12,71 @@ class cloud_data_client_azure_client_action(base):
   
   
     
-  async def _process_account_data_blob_containers(self, client:StorageManagementClient, account, resource_group, storage_account_name, **kwargs):
+  async def _process_account_data_blob_containers(self, client:StorageManagementClient, account, storage_account, **kwargs):
       try:
+        resource_group= self.get_cloud_client().get_resource_group_from_resource(resource= storage_account)
+        storage_account_name= self.get_cloud_client().get_resource_name_from_resource(resource= storage_account)
         return [self.get_cloud_client().serialize_azresource(resource= item) for item in self.get_cloud_client().sdk_request(
           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
           lambda_sdk_command=lambda: client.blob_containers.list(resource_group_name= resource_group, account_name= storage_account_name)
         )]
       except:
         return []
+      
+  async def _process_storage_account_by_page(self, client:StorageManagementClient, account, **kwargs):
+      
+      process_object = []
+      for _, page in self.get_cloud_client().sdk_request(
+          tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+          lambda_sdk_command=lambda: enumerate(client.storage_accounts.list().by_page())
+        ):
+        for storage_account in page:
+          for blob_container in await self._process_account_data_blob_containers(client= client, account= account, storage_account= storage_account):
+            process_object.append({
+              "container": blob_container,
+              "storage_account": storage_account
+            })
+          process_object.append({
+            "container": None,
+            "storage_account": storage_account
+          })
+      
+      return process_object
 
   async def _process_account_data(self, account, loop, **kwargs):
     if self.get_cloud_client().get_account_id(account= account) != "2384cb91-5343-4adc-ad43-ea55e1756e7f":
       return {}
     client = StorageManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
-    storage_accounts = [ storage_account for storage_account in self.get_cloud_client().sdk_request(
-      tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-      lambda_sdk_command=lambda: client.storage_accounts.list()
-    )]
-    blob_containers = {
-      self.get_cloud_client().get_resource_id_from_resource(resource= storage_account): loop.create_task(
-        self._process_account_data_blob_containers(
-          client= client, account= account, resource_group= self.get_cloud_client().get_resource_group_from_resource(resource= storage_account), 
-          storage_account_name= self.get_cloud_client().get_resource_name_from_resource(resource= storage_account))) for storage_account in storage_accounts
-    }
+    process_object = await self._process_storage_account_by_page(client= client, account= account)
+    # storage_accounts = [ storage_account for storage_account in self.get_cloud_client().sdk_request(
+    #   tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+    #   lambda_sdk_command=lambda: client.storage_accounts.list()
+    # )]
+    # blob_containers = {
+    #   self.get_cloud_client().get_resource_id_from_resource(resource= storage_account): loop.create_task(
+    #     self._process_account_data_blob_containers(
+    #       client= client, account= account, storage_account= storage_account)) for storage_account in storage_accounts
+    # }
 
-    if len(blob_containers) > 0:
-      await asyncio.wait(blob_containers.values())
+    # if len(blob_containers) > 0:
+    #   await asyncio.wait(blob_containers.values())
     
-    process_object = []
-    for storage_account in storage_accounts:
-      storage_account_id = self.get_cloud_client().get_resource_id_from_resource(resource= storage_account)
+    # process_object = []
+    # for storage_account in storage_accounts:
+    #   storage_account_id = self.get_cloud_client().get_resource_id_from_resource(resource= storage_account)
       
-      if blob_containers.get(storage_account_id) is None: 
-        continue
+    #   if blob_containers.get(storage_account_id) is None: 
+    #     continue
       
-      for container in blob_containers.get(storage_account_id).result():
-        process_object.append({
-          "container": container,
-          "storage_account": storage_account
-        })
-      process_object.append({
-        "container": None,
-        "storage_account": storage_account
-      })
+    #   for container in blob_containers.get(storage_account_id).result():
+    #     process_object.append({
+    #       "container": container,
+    #       "storage_account": storage_account
+    #     })
+    #   process_object.append({
+    #     "container": None,
+    #     "storage_account": storage_account
+    #   })
       
     return {
         "account": account,
