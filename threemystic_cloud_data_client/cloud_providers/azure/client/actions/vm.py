@@ -76,7 +76,7 @@ class cloud_data_client_azure_client_action(base):
  
             vm_data.append({
               "load_balancer": lb["serialized"],
-              "public_ip": self.get_cloud_client().serialize_azresource(resource= public_ips[load_balancers_front_end[self.get_cloud_client().get_resource_id_from_resource(resource= backend_address_load_balancing_rule)]["id_public_ip"]]),
+              "extra_public_ips": self.get_cloud_client().serialize_azresource(resource= public_ips[load_balancers_front_end[self.get_cloud_client().get_resource_id_from_resource(resource= backend_address_load_balancing_rule)]["id_public_ip"]]),
             })
 
           
@@ -116,31 +116,25 @@ class cloud_data_client_azure_client_action(base):
         ):
           if nic.virtual_machine is None:
             continue
+          
+          nic_data = self.get_common().helper_type().dictionary().merge_dictionary([
+            {},
+            {
+              "extra_public_ips": [
+                self.get_cloud_client().serialize_azresource(resource= public_ips[self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.public_ip_address)])
+                for ip_config in nic.ip_configurations if self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.public_ip_address) is not None]
+            },
+            self.get_cloud_client().serialize_azresource(resource= nic)
+          ])
           if return_data.get( self.get_cloud_client().get_resource_id_from_resource(resource= nic.virtual_machine)) is not None:
             return_data.get( self.get_cloud_client().get_resource_id_from_resource(resource= nic.virtual_machine)).append(
-              self.get_common().helper_type().dictionary().merge_dictionary([
-                {},
-                {
-                  "extra_public_ips": [
-                    self.get_cloud_client().serialize_azresource(resource= public_ips[self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.public_ip_address)])
-                    for ip_config in nic.ip_configurations if self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.public_ip_address) is not None]
-                },
-                self.get_cloud_client().serialize_azresource(resource= nic)
-              ])
+              nic_data
             )
             continue
           
 
           return_data[self.get_cloud_client().get_resource_id_from_resource(resource= nic.virtual_machine)] = [
-            self.get_common().helper_type().dictionary().merge_dictionary([
-              {},
-              {
-                "extra_public_ips": [
-                  self.get_cloud_client().serialize_azresource(resource= public_ips[self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.public_ip_address)])
-                  for ip_config in nic.ip_configurations if self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.public_ip_address) is not None]
-              },
-              self.get_cloud_client().serialize_azresource(resource= nic)
-            ])
+            nic_data
           ]
       
       return return_data
