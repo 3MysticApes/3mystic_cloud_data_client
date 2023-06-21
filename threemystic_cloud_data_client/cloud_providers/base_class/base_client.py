@@ -96,6 +96,13 @@ class cloud_data_client_provider_base_client(base):
     )
     return self._get_action_parser()
   
+
+  def get_data_data_action(self, *args, **kwargs):
+    return self.data_data_action
+  
+  def __set_data_data_action(self, data_action, *args, **kwargs):
+    self.data_data_action = data_action
+
   def get_action_from_arguments(self, *args, **kwargs):
     if hasattr(self, "_action_from_arguments"):
       return self._action_from_arguments
@@ -119,24 +126,47 @@ class cloud_data_client_provider_base_client(base):
     self._action_from_arguments = processed_info["processed_data"]
     return self.get_action_from_arguments()  
 
-  def get_data_action(self, *args, **kwargs):
+  def get_data_action(self, action = None, *args, **kwargs):
     if hasattr(self, "_data_action_data"):
-      return self._data_action_data
-    
-    return None
+      
+      if self.get_common().helper_type().string().is_null_or_whitespace(string_value= action):
+        action = self._data_action_data["default"]
+      
+      if self._data_action_data.get(action) is not None:
+        return self._data_action_data.get(action)
+      
+      self._data_action_data[action] = self._process_data_action(
+        provider = self.get_provider(),
+        action= action, 
+        *args, **kwargs)
+      return self.get_data_action(action= action, *args, **kwargs)
   
   def _set_data_action(self, *args, **kwargs):
     if self.get_action_from_arguments() is None or len(self.get_action_from_arguments()) < 1:
       return
 
-    try:
-      self._data_action_data = self._process_data_action(
-        provider = self.get_provider(),
-        action= self.get_common().helper_type().string().set_case(string_value= self.get_action_from_arguments() .get('data_action') , case= "lower"), 
-        *args, **kwargs)
+    try:      
+      action = self.get_common().helper_type().string().set_case(string_value= self.get_action_from_arguments() .get('data_action') , case= "lower")
+      if action != "all":
+        self._data_action_data = {
+          "default": action,
+          action: self._process_data_action(
+          provider = self.get_provider(),
+          action= action, 
+          *args, **kwargs)
+        }
+        return
+      
+      self._data_action_data = {
+        arg_key: self._process_data_action(
+          provider = self.get_provider(),
+          action= arg.get("const"), 
+          *args, **kwargs)
+        for arg_key, arg in self.get_default_parser_args().items() if arg.get("const") != "all"
+      }
+      self._data_action_data["default"] = list(self._data_action_data.keys())[0]
       
     except Exception as err:
-      print(f"The action {self.get_action_from_arguments().get('data_action')} is unknown")
       self.get_common().get_logger().exception(f"The action {self.get_action_from_arguments() .get('data_action')} is unknown", extra={"exception": err})
       if not self.get_suppres_parser_help():
         self._get_action_parser().print_help()

@@ -11,7 +11,7 @@ class cloud_data_client_azure_client_action(base):
     super().__init__(
       data_action="vm", 
       logger_name= "cloud_data_client_azure_client_action_vm", 
-      uniqueid_lambda = lambda: True
+      uniqueid_lambda = lambda: True,
       *args, **kwargs)
   
   

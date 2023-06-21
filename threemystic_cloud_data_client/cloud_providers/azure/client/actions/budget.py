@@ -10,7 +10,7 @@ class cloud_data_client_azure_client_action(base):
     super().__init__(
       data_action="budget", 
       logger_name= "cloud_data_client_azure_client_action_budget", 
-      uniqueid_lambda = lambda: True
+      uniqueid_lambda = lambda: True,
       *args, **kwargs)
   
   def __process_get_cost_generate_data(self, account, client, filter, is_forcast = False, *args, **kwargs):

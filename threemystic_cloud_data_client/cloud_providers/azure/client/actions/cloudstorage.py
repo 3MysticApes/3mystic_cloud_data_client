@@ -5,9 +5,9 @@ from azure.mgmt.storage import StorageManagementClient
 class cloud_data_client_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
-      data_action="blob", 
-      logger_name= "cloud_data_client_azure_client_action_blob", 
-      uniqueid_lambda = lambda: True
+      data_action="cloudstorage", 
+      logger_name= "cloud_data_client_azure_client_action_cloudstorage", 
+      uniqueid_lambda = lambda: True,
       *args, **kwargs)
   
   
