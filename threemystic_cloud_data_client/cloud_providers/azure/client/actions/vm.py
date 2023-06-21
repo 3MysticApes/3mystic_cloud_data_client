@@ -53,36 +53,32 @@ class cloud_data_client_azure_client_action(base):
           for frontend_ip_load_balancing_rule in frontend_ip.load_balancing_rules:
             if frontend_ip_load_balancing_rule is None:
               continue
-            load_balancers_front_end[self.get_cloud_client().get_resource_id_from_resource(resource= frontend_ip_load_balancing_rule)] = {
-              "id_lb": id_lb,
-              "id_public_ip": self.get_cloud_client().get_resource_id_from_resource(resource= frontend_ip.public_ip_address)
-            }
+            load_balancers_front_end[self.get_cloud_client().get_resource_id_from_resource(resource= frontend_ip_load_balancing_rule)] = self.get_cloud_client().get_resource_id_from_resource(resource= frontend_ip.public_ip_address)
       
 
-      for id_lb, lb in load_balancers.items():  
-        if lb["raw"].backend_address_pools is None:
+      for id_lb, lb in load_balancers.items():
+        if lb["raw"].frontend_ip_configurations is None:
           continue
+        vm_data = {
+          "load_balancer": lb["serialized"],
+          "extra_public_ips": []
+        }
         for backend_address_pool in lb["raw"].backend_address_pools:
-          vm_data = []
           if backend_address_pool.load_balancing_rules is None:
             continue
             
-          for backend_address_load_balancing_rule in backend_address_pool.load_balancing_rules:
-            if load_balancers_front_end.get(self.get_cloud_client().get_resource_id_from_resource(resource= backend_address_load_balancing_rule)) is None:
-              continue
-            
-            if load_balancers_front_end[self.get_cloud_client().get_resource_id_from_resource(resource= backend_address_load_balancing_rule)]["id_public_ip"] is None:
-              continue
- 
-            vm_data.append({
-              "load_balancer": lb["serialized"],
-              "extra_public_ips": self.get_cloud_client().serialize_azresource(resource= public_ips[load_balancers_front_end[self.get_cloud_client().get_resource_id_from_resource(resource= backend_address_load_balancing_rule)]["id_public_ip"]]),
-            })
-
-          
           if backend_address_pool.load_balancer_backend_addresses is None:
             continue
+          
+          backend_frontend_connector = []
+          for backend_address_load_balancing_rule in backend_address_pool.load_balancing_rules:            
+            if backend_address_load_balancing_rule is None:
+              continue
 
+            if load_balancers_front_end.get(self.get_cloud_client().get_resource_id_from_resource(resource= backend_address_load_balancing_rule)) is None:
+              continue
+            backend_frontend_connector.append(load_balancers_front_end.get(self.get_cloud_client().get_resource_id_from_resource(resource= backend_address_load_balancing_rule)))
+            
           for backend_address in backend_address_pool.load_balancer_backend_addresses:
             if backend_address.network_interface_ip_configuration is not None:
               if self.get_cloud_client().get_resource_id_from_resource(resource= backend_address.network_interface_ip_configuration) is not None:
@@ -94,12 +90,17 @@ class cloud_data_client_azure_client_action(base):
               if self.get_common().helper_type().string().is_null_or_whitespace(string_value= key):
                 continue
 
-              if return_data.get(key) is not None:
-                return_data[key].append(vm_data)
-                continue
+              return_data[key] = [
+                {
+                  "load_balancer": lb["serialized"],
+                  "extra_public_ips": [
+                    self.get_cloud_client().serialize_azresource(resource= public_ips[ip_id])
+                    for ip_id in backend_frontend_connector if public_ips.get(ip_id) is not None
+                  ]
+                }
+              ]
 
-              return_data[key] = vm_data
-
+          
       return return_data      
            
     except Exception as err:
@@ -172,9 +173,14 @@ class cloud_data_client_azure_client_action(base):
 
   async def _process_account_data_get_vm_load_balancers(self, vm_nics, load_balancers_by_nics, *args, **kwargs):
     return_load_balancers = []
+    
     for nic in vm_nics:
-      return_load_balancers += [lb_data for nic_id, lb_data in load_balancers_by_nics.items() if nic_id == self.get_cloud_client().get_resource_id_from_resource(resource= nic)]
+      if load_balancers_by_nics.get(self.get_cloud_client().get_resource_id_from_resource(resource= nic)) is None:
+        continue
+        
+      return_load_balancers += (load_balancers_by_nics.get(self.get_cloud_client().get_resource_id_from_resource(resource= nic)))
       # I might look into the whole private IP agress later, the issue is I have to validate networks
+      
     
     return return_load_balancers
   
