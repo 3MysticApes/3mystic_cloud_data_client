@@ -19,14 +19,14 @@ class cloud_data_client(base):
   def get_supported_providers(self, *args, **kwargs):
     return super().get_supported_providers()
   
-  def init_client(self, provider, *args, **kwargs):
+  def init_client(self, provider, refresh = False, *args, **kwargs):
     provider = self.get_common().helper_type().string().set_case(string_value= provider, case= "lower") if provider is not None else ""
 
     if provider not in self.get_supported_providers():
       raise self.get_common().exception(
         exception_type = "argument"
       ).not_implemented(
-        logger = self.logger,
+        logger= self.get_logger(),
         name = "provider",
         message = f"Unknown Cloud Provided: {provider}.\nSupported Cloud Providers{self.get_supported_providers()}"
       )
@@ -34,7 +34,7 @@ class cloud_data_client(base):
     if not hasattr(self, "_client"):
       self._client = {}
 
-    if self._client.get(provider) is not None:
+    if self._client.get(provider) is not None and not refresh:
       return
 
     if provider == "azure":
@@ -54,7 +54,7 @@ class cloud_data_client(base):
       self._client[provider] = provider_cloud_data_client(
         cloud_data_client= self,
         cloud_client = cloud_client(
-          logger= self.get_logger(), 
+          logger= self.get_common().get_logger(), 
           common= self.get_common()
         ).client(provider= provider),
         *args, **kwargs
@@ -64,7 +64,7 @@ class cloud_data_client(base):
     raise self.get_common().exception().exception(
       exception_type = "argument"
     ).not_implemented(
-      logger = self.logger,
+      logger= self.get_common().get_logger(), 
       name = "provider",
       message = f"Unknown Cloud Provided: {provider}.\nSupported Cloud Providers{self.get_supported_providers()}"
     )
@@ -78,7 +78,7 @@ class cloud_data_client(base):
           raise self.get_common().exception().exception(
             exception_type = "argument"
           ).not_implemented(
-            logger = self.logger,
+            logger= self.get_common().get_logger(), 
             name = "provider",
             message = f"provider cannot be null or whitespace"
           )

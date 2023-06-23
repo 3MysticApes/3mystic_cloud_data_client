@@ -182,12 +182,14 @@ class cloud_data_client_azure_client_action(base):
         max_date = cost_data[1]
     
     last_seven_day_total = Decimal(0)
-    seven_days_ago = self.get_common().helper_type().datetime().time_delta(
-      dt= self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(max_date), dt_format= "%Y%m%d"),
-      days= -6)
+    seven_days_ago = (
+      self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(max_date), dt_format= "%Y%m%d") +
+      self.get_common().helper_type().datetime().time_delta(
+        days= -6)
+    )
     for day in range(0,7):
       date_string = self.get_common().helper_type().datetime().datetime_as_string(
-        dt= self.get_common().helper_type().datetime().time_delta(dt= seven_days_ago, days= day),
+        dt= (seven_days_ago + self.get_common().helper_type().datetime().time_delta(days= day)),
         dt_format= "%Y%m%d"
       )
       if by_day.get(date_string) is not None:
