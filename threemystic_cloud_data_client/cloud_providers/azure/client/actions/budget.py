@@ -13,34 +13,34 @@ class cloud_data_client_azure_client_action(base):
       uniqueid_lambda = lambda: True,
       *args, **kwargs)
   
-  def __process_get_cost_generate_data(self, account, client, filter, is_forcast = False, *args, **kwargs):
+  def __process_get_cost_generate_data(self, account, client, cost_filter, is_forcast = False, *args, **kwargs):
     if not is_forcast:
       return client.query.usage(
             scope= f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
-            parameters= QueryDefinition(**filter)
+            parameters= QueryDefinition(**cost_filter)
           )
 
     return client.forecast.usage(
       scope= f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
-      parameters= ForecastDefinition(**filter)
-    )    
-  async def __process_get_cost_generate_total(self, account, client, filter, is_forcast = False, *args, **kwargs):
+      parameters= ForecastDefinition(**cost_filter)
+    )   
+   
+  async def __process_get_cost_generate_total(self, account, client, cost_filter, is_forcast = False, *args, **kwargs):
     account_total = Decimal(0)
     try:
       account_usage = self.get_cloud_client().sdk_request(
         tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-        lambda_sdk_command=lambda: self.__process_get_cost_generate_data(account= account, client= client, filter= filter, is_forcast= is_forcast)  
+        lambda_sdk_command=lambda: self.__process_get_cost_generate_data(account= account, client= client, cost_filter= cost_filter, is_forcast= is_forcast)  
       )
-      
-      print(account_usage)
+
       for row in account_usage.rows:
-        print(row)
         account_total += Decimal(row[0])
+      
+      return account_total.quantize(Decimal('.01'), ROUND_HALF_UP) if self.get_common().helper_type().general().is_type(obj=account_total, type_check= Decimal) else account_total
     except Exception as err:
       self.get_common().get_logger().exception(msg= f"{self.get_cloud_client().get_account_id(account= account)} - {str(err)}", extra={"exception": err})
       return None
-    finally:
-      return account_total.quantize(Decimal('.01'), ROUND_HALF_UP) if self.get_common().helper_type().general().is_type(obj=account_total, type_check= Decimal) else account_total
+      
   
   async def __process_get_cost_data_last_month(self, total_by_month, *args, **kwargs):
     last_month_year = self.get_data_start().year
@@ -52,7 +52,7 @@ class cloud_data_client_azure_client_action(base):
     if total_by_month is not None and total_by_month.get(f'{last_month_month}') is not None:
       return total_by_month.get(f'{last_month_month}')
     
-    filter = {
+    cost_filter = {
       'type': ExportType.AMORTIZED_COST,
       'timeframe': TimeframeType.CUSTOM,
       'time_period': QueryTimePeriod(
@@ -74,7 +74,7 @@ class cloud_data_client_azure_client_action(base):
         ]
       }
     }
-    return await self.__process_get_cost_generate_total(filter= filter, *args, **kwargs)
+    return await self.__process_get_cost_generate_total(cost_filter= cost_filter, *args, **kwargs)
   
   async def __process_get_cost_data_forcast_year(self, account, fiscal_year_start, *args, **kwargs):
     fiscal_year_end = self.get_common().helper_type().datetime().yesterday(dt= fiscal_year_start)
@@ -82,7 +82,7 @@ class cloud_data_client_azure_client_action(base):
       dt_string= f"{fiscal_year_end.year+1}/{self.get_common().helper_type().datetime().get_month_as_2digits(month=fiscal_year_end.month)}/{self.get_common().helper_type().datetime().get_day_as_2digits(day=fiscal_year_end.day)}",
       dt_format= "%Y/%m/%d"
     )
-    filter = {
+    cost_filter = {
       'type': ForecastType.AMORTIZED_COST,
       'timeframe': ForecastTimeframe.CUSTOM,
       'time_period': ForecastTimePeriod(
@@ -109,7 +109,7 @@ class cloud_data_client_azure_client_action(base):
     try:
       usage = self.get_cloud_client().sdk_request(
         tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-        lambda_sdk_command=lambda: self.__process_get_cost_generate_data(account= account, filter= filter, is_forcast= True, *args, **kwargs)  
+        lambda_sdk_command=lambda: self.__process_get_cost_generate_data(account= account, cost_filter= cost_filter, is_forcast= True, *args, **kwargs)  
       )
       if usage is None:
         return usage
@@ -129,7 +129,7 @@ class cloud_data_client_azure_client_action(base):
         dt_format= "%Y/%m/%d"
       )
       
-    filter = {
+    cost_filter = {
       'type': ExportType.AMORTIZED_COST,
       'timeframe': TimeframeType.CUSTOM,
       'time_period': QueryTimePeriod(
@@ -155,7 +155,7 @@ class cloud_data_client_azure_client_action(base):
     try:
       usage = self.get_cloud_client().sdk_request(
         tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-        lambda_sdk_command=lambda: self.__process_get_cost_generate_data(account= account, filter= filter, is_forcast= False, *args, **kwargs)  
+        lambda_sdk_command=lambda: self.__process_get_cost_generate_data(account= account, cost_filter= cost_filter, is_forcast= False, *args, **kwargs)  
       )
 
       if usage is None:
@@ -163,6 +163,7 @@ class cloud_data_client_azure_client_action(base):
 
       return await self.__process_get_cost_data_daily_data(usage= usage)
     except Exception as err:
+      print(err)
       self.get_common().get_logger().exception(msg= f"{self.get_cloud_client().get_account_id(account= account)} - {str(err)}", extra={"exception": err})
       return None
   
