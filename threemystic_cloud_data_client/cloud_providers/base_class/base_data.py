@@ -1,5 +1,5 @@
 from threemystic_common.base_class.base_provider import base
-import abc
+from abc import abstractmethod
 import asyncio, concurrent.futures, socket, errno
 from tqdm.asyncio import tqdm
 
@@ -14,11 +14,11 @@ class cloud_data_client_provider_base_data(base):
     self._set_max_thread_pool(*args, **kwargs)
     self._set_data_start(*args, **kwargs)
 
-  @abc.abstractmethod
+  @abstractmethod
   def get_accounts(self):
     pass
   
-  @abc.abstractclassmethod
+  @abstractmethod
   async def _process_account_data(self, **kwargs):
     raise Exception("_process_account_data is not DEFINED")
   
