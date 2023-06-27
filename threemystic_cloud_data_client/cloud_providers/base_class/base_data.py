@@ -71,12 +71,17 @@ class cloud_data_client_provider_base_data(base):
     return self.get_common().helper_type().dictionary().merge_dictionary([
       {},
       {
-        "extra_account": account,
-        "extra_region": region,
+        "extra_account": self.get_cloud_client().serialize_azresource(resource= account),
+        "extra_region": (
+          region if not None else (
+            self.get_cloud_client().get_azresource_location(resource= resource) if resource is not None else None)),
         "extra_resourcegroups": resource_groups,
-        "extra_id": resource_id,
+        "extra_id": (
+          resource_id if not None else (
+            self.get_cloud_client().get_azresource_location(resource= resource) if resource is not None else (
+            self.get_cloud_client().get_account_id(account= account) if account is not None else  None))),
       },
-      self.get_cloud_client().serialize_azresource(resource= resource) if resource is not None else {}
+      self.get_cloud_client().serialize_azresource(resource= resource) if resource is not None else self.get_cloud_client().serialize_azresource(resource= account)
     ])
   
   def format_results(self, results, output_format = None, *args, **kwargs):        
