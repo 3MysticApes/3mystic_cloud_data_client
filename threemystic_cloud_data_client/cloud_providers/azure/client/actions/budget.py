@@ -36,7 +36,7 @@ class cloud_data_client_azure_client_action(base):
       for row in account_usage.rows:
         account_total += Decimal(row[0])
       
-      return account_total.quantize(Decimal('.01'), ROUND_HALF_UP) if self.get_common().helper_type().general().is_type(obj=account_total, type_check= Decimal) else account_total
+      return account_total.quantize(Decimal('.0000'), ROUND_HALF_UP) if self.get_common().helper_type().general().is_type(obj=account_total, type_check= Decimal) else account_total
     except Exception as err:
       self.get_common().get_logger().exception(msg= f"{self.get_cloud_client().get_account_id(account= account)} - {str(err)}", extra={"exception": err})
       return None
@@ -197,9 +197,9 @@ class cloud_data_client_azure_client_action(base):
         last_seven_day_total += by_day.get(date_string)
 
     return {
-      "total": total.quantize(Decimal('.01'), ROUND_HALF_UP),
-      "by_month": {month:value.quantize(Decimal('.01'), ROUND_HALF_UP) for month, value in by_month.items() if value is not None},
-      "last_seven_days": last_seven_day_total.quantize(Decimal('.01'), ROUND_HALF_UP),
+      "total": total.quantize(Decimal('.0000'), ROUND_HALF_UP),
+      "by_month": {month:value.quantize(Decimal('.0000'), ROUND_HALF_UP) for month, value in by_month.items() if value is not None},
+      "last_seven_days": last_seven_day_total.quantize(Decimal('.0000'), ROUND_HALF_UP),
     }
 
   def __process_get_cost_calculate_forecast_total(self, current_total, forecast_total, *args, **kwargs):
