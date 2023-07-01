@@ -154,6 +154,23 @@ class cloud_data_client_provider_base_data(base):
       run_params
     ])
   
+  def _process_data_filter_condition_greater_than(self, condition_value, condition, data_item, *args, **kwargs):
+    key_value = condition.get("key")
+    if key_value is None:
+      return True
+    
+    data_value = self.get_common().helper_type().general().get_container_value(container= data_item, value_key= key_value)
+
+    if condition_value[0:1] == "i":
+      self.get_common().helper_type().general().is_type(obj= data_value, type_check= str)
+      data_value = self.get_common().helper_type().string().set_case(string_value= data_value, case= "lower")
+      condition["value"] = self.get_common().helper_type().string().set_case(string_value= condition.get("value"), case= "lower")
+
+    if condition_value[0:3] == "not" or condition_value[1:3] == "not":
+      return data_value > condition.get("value")
+    
+    return data_value > condition.get("value")
+  
   def _process_data_filter_condition_equals(self, condition_value, condition, data_item, *args, **kwargs):
     key_value = condition.get("key")
     if key_value is None:
@@ -171,6 +188,14 @@ class cloud_data_client_provider_base_data(base):
     
     return data_value == condition.get("value")
     
+  
+  
+  def _process_data_filter_condition_attributes(self, condition_value, *args, **kwargs):
+    not_start = condition_value[0:3] == "not"
+    return {
+      "not": True if condition_value[0:3] == "not" or condition_value[1:3] == "not" else False
+    }
+    
 
   def _process_data_filter_condition(self, condition, data_item, *args, **kwargs):
     if condition is None:
@@ -183,6 +208,10 @@ class cloud_data_client_provider_base_data(base):
 
     if condition_value.endswith("equals"):
       return self._process_data_filter_condition_equals(condition_value= condition_value, condition= condition, data_item= data_item)
+    
+    if condition_value.endswith("gt"):
+      return self._process_data_filter_condition_equals(condition_value= condition_value, condition= condition, data_item= data_item)
+    
 
 
   def _process_data_filter_is_row_valid(self, data_item, *args, **kwargs):
