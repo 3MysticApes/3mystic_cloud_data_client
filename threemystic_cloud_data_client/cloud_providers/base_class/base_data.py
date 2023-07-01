@@ -124,8 +124,84 @@ class cloud_data_client_provider_base_data(base):
           pool= pool,
           **kwargs
         )
+  
+  def get_runparam_key(self, data_key, default_value = {}, *args, **kwargs):
 
-  async def main(self, pool= None, *args, **kwargs):   
+    if data_key is not None and data_key in self.__run_params:
+      if self.get_common().helper_type().general().is_type(obj= self.__run_params.get(data_key), type_check= type(default_value)):
+        return self.__run_params.get(data_key)
+    
+    return default_value
+  
+  def _set_run_params(self, run_params = None, *args, **kwargs):
+    if run_params is None:
+      self.__run_params = {}
+      return
+    
+    if not self.get_common().helper_type().general().is_type(obj= run_params, type_check= dict):
+      self.__run_params = {}
+      return
+    
+    if "data_action" in run_params:
+      del run_params["data_action"]
+    
+    self.__run_params = self.get_common().helper_type().dictionary().merge_dictionary([
+      {},
+      {
+        "data_filter": {},
+        "data_hideempty": False
+      },
+      run_params
+    ])
+  
+  def _process_data_filter_condition_equals(self, condition_value, condition, data_item, *args, **kwargs):
+    key_value = condition.get("key")
+    if key_value is None:
+      return True
+    
+    data_value = self.get_common().helper_type().general().get_container_value(container= data_item, value_key= key_value)
+
+    if condition_value[0:1] == "i":
+      self.get_common().helper_type().general().is_type(obj= data_value, type_check= str)
+      data_value = self.get_common().helper_type().string().set_case(string_value= data_value, case= "lower")
+      condition["value"] = self.get_common().helper_type().string().set_case(string_value= condition.get("value"), case= "lower")
+
+    if condition_value[0:3] == "not" or condition_value[1:3] == "not":
+      return data_value != condition.get("value")
+    
+    return data_value == condition.get("value")
+    
+
+  def _process_data_filter_condition(self, condition, data_item, *args, **kwargs):
+    if condition is None:
+      return True
+    
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= condition.get("condition")):
+      return True
+  
+    condition_value = self.get_common().helper_type().string().set_case(string_value= condition.get("condition"), case= "lower")
+
+    if condition_value.endswith("equals"):
+      return self._process_data_filter_condition_equals(condition_value= condition_value, condition= condition, data_item= data_item)
+
+
+  def _process_data_filter_is_row_valid(self, data_item, *args, **kwargs):
+    data_filter = self.get_runparam_key(data_key= "data_filter", default_value= {})
+    if len(data_filter) < 1:
+      return True
+    
+    return self._process_data_filter_condition(condition= data_filter, data_item= data_item)
+    
+
+  def _process_data_filter(self, data, *args, **kwargs):
+    if len(self.get_runparam_key(data_key= "data_filter", default_value= {})) < 1:
+      return data
+    
+    return [data_item for data_item in data if self._process_data_filter_is_row_valid(data_item= data_item)]
+
+
+  async def main(self, pool= None, run_params = None, *args, **kwargs):   
+    self._set_run_params(run_params= run_params)
     if pool == None:
       return await self.__main_poolexecutor(*args, **kwargs)
     
@@ -240,8 +316,13 @@ class cloud_data_client_provider_base_data(base):
       if task.result() is None or (task.result() is not None and len(task.result()) < 1):
         continue
       
-      if(task.result().get("account") is None):
+      if task.result().get("account") is None:
         continue
+      
+      task.result()["data"]= self._process_data_filter(data= task.result()["data"])
+      if self.get_runparam_key(data_key= "data_hideempty", default_value= False) is True and len(task.result()["data"]) < 1:
+        continue
+
       
       if return_data.get(self.get_cloud_client().get_account_id(account= task.result()["account"])) is None:
         return_data[self.get_cloud_client().get_account_id(account= task.result()["account"])] = task.result()["data"]

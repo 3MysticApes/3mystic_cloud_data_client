@@ -22,19 +22,19 @@ class cloud_data_client_provider_base_client(base):
       "epilog": ""
     }
   
-    self._set_action_from_arguments(force_action_arguments= force_action_arguments, *args, **kwargs)
+    self._set_arguments_from_parameters(force_action_arguments= force_action_arguments, *args, **kwargs)
     
     self._set_data_action()
 
   @classmethod
-  def get_default_parser_args(cls, *args, **kwargs):
+  def get_default_parser_args_actions(cls, *args, **kwargs):
     return {
       "--cloudstorage": {
         "default": None, 
         "const": "cloudstorage",
         "dest": "data_action",
         "help": "Data Action: This pulls Cloud Storage (S3/Storage Accounts) for the provider",
-        "action": 'store_const'
+        "action": 'store_const' # could look into append_const
       },
       "--budget": {
         "default": None, 
@@ -66,6 +66,32 @@ class cloud_data_client_provider_base_client(base):
       }
     }
   
+  def get_parser_args(self, *args, **kwargs):
+    if hasattr(self, "_data_parser_args"):
+      return self._data_parser_args
+    
+    
+    self._data_parser_args = self.get_common().helper_type().dictionary().merge_dictionary([
+      {},
+      {
+        "--filter,-f": {
+          "default": None,
+          "type": str,
+          "dest": "data_filter",
+          "help": "Filter: JSON string representing the filter data. ex {\"condition\":\"and\", \"filter\":{\"condition\":\"iequals\",\"key\": [\"properties\",\"storageProfile\",\"osDisk\",\"osType\"], \"value\": \"windows\"}",
+          "action": 'store'
+        },
+        "--hideempty, --hide-empty": {
+          "default": False,
+          "dest": "data_hideempty",
+          "help": "Hide accounts with no data. Default False",
+          "action": 'store_true'
+        }
+      },
+      self.get_default_parser_args_actions(),
+    ])
+    return self.get_parser_args()
+  
   def get_suppres_parser_help(self, *args, **kwargs):
     if hasattr(self, "_suppres_parser_help"):
       return self._suppres_parser_help
@@ -91,40 +117,75 @@ class cloud_data_client_provider_base_client(base):
       parser_init_kwargs = self._default_parser_init,
       parser_args = self.get_common().helper_type().dictionary().merge_dictionary([
         {},
-        self.get_default_parser_args(),
+        self.get_parser_args(),
       ])
     )
     return self._get_action_parser()
   
-
-  def get_data_data_action(self, *args, **kwargs):
-    return self.data_data_action
-  
-  def __set_data_data_action(self, data_action, *args, **kwargs):
-    self.data_data_action = data_action
-
-  def get_action_from_arguments(self, *args, **kwargs):
-    if hasattr(self, "_action_from_arguments"):
-      return self._action_from_arguments
+  def get_data_run_key(self, data_key = None, default_value = {}, *args, **kwargs):
+    if hasattr(self, "_data_arg_param_values"):
+      if data_key is None:
+        return self._data_arg_param_values
+      if data_key in self._data_arg_param_values:
+        return self._data_arg_param_values.get(data_key)
     
-    return {}
+    return default_value
   
-  def _set_action_from_arguments(self, force_action_arguments = None, *args, **kwargs):
-    if force_action_arguments is not None:
-      self._action_from_arguments = force_action_arguments
-      return self.get_action_from_arguments()
-
+  def get_data_run_action(self, *args, **kwargs):
+    if hasattr(self, "_data_arg_param_values"):
+      return self._data_arg_param_values.get("data_action")
+    
+    return None
+  
+  def _process_data_run_filter(self, data_filter, *args, **kwargs):
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= data_filter):
+      data_filter = {}
+    
+    if data_filter is None:
+      data_filter = {}
+    
+    if self.get_common().helper_type().general().is_type(obj= data_filter, type_check= str):
+      try:
+        data_filter = self.get_common().helper_json().loads(data= data_filter)
+      except Exception as err:
+        # will look to do something for various verbocity levels
+        # print(err) 
+        pass
+    
+    if not self.get_common().helper_type().general().is_type(obj= data_filter, type_check= dict):
+      return {}
+    
+    return data_filter    
+  
+  
+  def _set_arguments_from_parameters(self, data_action = None, data_filter = None, data_hideempty = None, *args, **kwargs):
     processed_info = self.__get_action_parser_options().process_opts(
       parser = self._get_action_parser()
     )
 
-    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= processed_info["processed_data"].get("data_action")):
+    if data_hideempty is None or not self.get_common().helper_type().general().is_type(obj= data_hideempty, type_check= bool):
+      data_hideempty = processed_info["processed_data"].get("data_hideempty")
+    
+    data_hideempty = self.get_common().helper_type().bool().is_true(check_value= data_hideempty)
+
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= data_action):
+      data_action = processed_info["processed_data"].get("data_action")
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= data_filter):
+      data_filter = processed_info["processed_data"].get("data_filter")
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= data_filter):
+      data_filter = {}
+    
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= data_action):
       if not self.get_suppres_parser_help():
         self._get_action_parser().print_help()
-      return None
+        return None
     
-    self._action_from_arguments = processed_info["processed_data"]
-    return self.get_action_from_arguments()  
+    self._data_arg_param_values={
+      "data_action": data_action,
+      "data_filter": self._process_data_run_filter(data_filter= data_filter),
+      "data_hideempty": data_hideempty,
+    }
+    
 
   def get_data_action(self, action = None, *args, **kwargs):
     if hasattr(self, "_data_action_data"):
@@ -142,11 +203,11 @@ class cloud_data_client_provider_base_client(base):
       return self.get_data_action(action= action, *args, **kwargs)
   
   def _set_data_action(self, *args, **kwargs):
-    if self.get_action_from_arguments() is None or len(self.get_action_from_arguments()) < 1:
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_data_run_action()):
       return
 
     try:      
-      action = self.get_common().helper_type().string().set_case(string_value= self.get_action_from_arguments() .get('data_action') , case= "lower")
+      action = self.get_common().helper_type().string().set_case(string_value= self.get_data_run_action() , case= "lower")
       if action != "all":
         self._data_action_data = {
           "default": action,
@@ -162,12 +223,12 @@ class cloud_data_client_provider_base_client(base):
           provider = self.get_provider(),
           action= arg.get("const"), 
           *args, **kwargs)
-        for arg_key, arg in self.get_default_parser_args().items() if arg.get("const") != "all"
+        for arg_key, arg in self.get_default_parser_args_actions().items() if arg.get("const") != "all"
       }
       self._data_action_data["default"] = list(self._data_action_data.keys())[0]
       
     except Exception as err:
-      self.get_common().get_logger().exception(f"The action {self.get_action_from_arguments() .get('data_action')} is unknown", extra={"exception": err})
+      self.get_common().get_logger().exception(f"The action {self.get_data_run_action()} is unknown", extra={"exception": err})
       if not self.get_suppres_parser_help():
         self._get_action_parser().print_help()
   
@@ -186,7 +247,7 @@ class cloud_data_client_provider_base_client(base):
     if self.get_data_action() is None:
       return 
 
-    results = asyncio.run(self.get_data_action().main())
+    results = asyncio.run(self.get_data_action().main(run_params= self.get_data_run_key(data_key= None) ))
     self.get_data_action().format_results(results= results, output_format= self.get_cloud_data_client().get_default_output_format())
   
   def get_cloud_client(self, *args, **kwargs):
