@@ -159,7 +159,7 @@ class cloud_data_client_provider_base_data(base):
       if not self.get_common().helper_type().general().is_type(obj= self.__run_params.get("data_accounts"), type_check= str):
         self.__run_params["data_accounts"] = self.get_common().helper_type().string().split(string_value= self.__run_params.get("data_accounts"), separator= "[,;]")
 
-    if not self.get_common().helper_type().general().is_type(obj= self.__run_params.get("data_accounts"), type_check= list)
+    if not self.get_common().helper_type().general().is_type(obj= self.__run_params.get("data_accounts"), type_check= list):
       self.__run_params["data_accounts"] = []
       
     if self.__run_params["data_accounts"] is None:
@@ -173,7 +173,7 @@ class cloud_data_client_provider_base_data(base):
       data_value = self.get_common().helper_type().string().set_case(string_value= data_value, case= "lower")
       if self.get_common().helper_type().general().is_type(obj= condition_value, type_check= str):
         condition_value = self.get_common().helper_type().string().set_case(string_value= value, case= "lower")
-      else if self.get_common().helper_type().general().is_type(obj= condition_value, type_check= list):
+      elif self.get_common().helper_type().general().is_type(obj= condition_value, type_check= list):
         condition_value = [self.get_common().helper_type().string().set_case(string_value= value, case= "lower") for value in condition_value]
       else:
         raise self.get_common().exception().exception(
@@ -252,13 +252,17 @@ class cloud_data_client_provider_base_data(base):
     while condition != condition_value:
       if condition_value[0:3] == "not":
         condition_settings["not"] = True
+        condition_value=condition_value[3:]
         continue
       if condition_value[0:1] == "i":
         condition_settings["case_insensitive"] = True
+        condition_value=condition_value[1:]
         continue
       if condition_value[0:1] == "e":
         condition_settings["equals"] = True
-        continue
+        condition_value=condition_value[1:]
+        
+      break
 
     return condition_settings
     
@@ -279,7 +283,7 @@ class cloud_data_client_provider_base_data(base):
 
     condition_operator = self.get_common().helper_type().string().set_case(string_value= condition.get("condition"), case= "lower")
     data_value = self.get_common().helper_type().general().get_container_value(container= data_item, value_key= key_value)
-
+    
     if condition_operator.endswith("equals"):
       return self._process_data_filter_condition_equals(condition= condition_operator, condition_value= condition.get("value"), data_value= data_value)
     
