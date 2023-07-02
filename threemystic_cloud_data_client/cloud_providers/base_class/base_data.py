@@ -68,7 +68,7 @@ class cloud_data_client_provider_base_data(base):
     pass
   
   def get_base_return_data(self, account= None, resource_id = None, resource = None, region= None, resource_groups= None, *args, **kwargs):
-    return self.get_common().helper_type().dictionary().merge_dictionary([
+    resource_data = self.get_common().helper_type().dictionary().merge_dictionary([
       {},
       {
         "extra_account": self.get_cloud_client().serialize_azresource(resource= account),
@@ -83,6 +83,12 @@ class cloud_data_client_provider_base_data(base):
       },
       self.get_cloud_client().serialize_azresource(resource= resource) if resource is not None else self.get_cloud_client().serialize_azresource(resource= account)
     ])
+
+    resource_data["extra_resourcegroups"] = self.get_common().helper_type().list().unique_list(
+      data= resource_data.get("extra_resourcegroups"),
+      case_sensitive = False
+    )
+    return resource_data
   
   def format_results(self, results, output_format = None, *args, **kwargs):        
     if output_format is None or (self.get_common().helper_type().string().set_case(string_value= output_format, case= "lower") not in self.get_supported_output_format()):
@@ -125,8 +131,10 @@ class cloud_data_client_provider_base_data(base):
           **kwargs
         )
   
-  def get_runparam_key(self, data_key, default_value = {}, *args, **kwargs):
-
+  def get_runparam_key(self, data_key = None, default_value = {}, *args, **kwargs):
+    if data_key is None:
+      return self.__run_params
+    
     if data_key is not None and data_key in self.__run_params:
       if self.get_common().helper_type().general().is_type(obj= self.__run_params.get(data_key), type_check= type(default_value)):
         return self.__run_params.get(data_key)
@@ -145,6 +153,19 @@ class cloud_data_client_provider_base_data(base):
     if "data_action" in run_params:
       del run_params["data_action"]
     
+    if "data_filter" in run_params:
+      if not self.get_common().helper_type().general().is_type(obj= run_params.get("data_filter"), type_check= dict):
+        run_params["data_filter"] = {}
+    
+    if "data_accounts" in run_params:
+      if self.get_common().helper_type().general().is_type(obj= run_params.get("data_accounts"), type_check= str):
+        run_params["data_accounts"] = self.get_common().helper_type().string().split(
+          string_value= run_params["data_accounts"],
+          separator= r"[,;\s]"
+        )
+      if not self.get_common().helper_type().general().is_type(obj= run_params.get("data_accounts"), type_check= list):
+        run_params["data_accounts"] = []
+    
     self.__run_params = self.get_common().helper_type().dictionary().merge_dictionary([
       {},
       {
@@ -154,16 +175,6 @@ class cloud_data_client_provider_base_data(base):
       },
       run_params
     ])
-
-    if self.__run_params.get("data_accounts") is not None:
-      if not self.get_common().helper_type().general().is_type(obj= self.__run_params.get("data_accounts"), type_check= str):
-        self.__run_params["data_accounts"] = self.get_common().helper_type().string().split(string_value= self.__run_params.get("data_accounts"), separator= "[,;]")
-
-    if not self.get_common().helper_type().general().is_type(obj= self.__run_params.get("data_accounts"), type_check= list):
-      self.__run_params["data_accounts"] = []
-      
-    if self.__run_params["data_accounts"] is None:
-      self.__run_params["data_accounts"] = []
   
   
   def _process_data_filter_condition_in(self, condition, condition_value, data_value, *args, **kwargs):
@@ -343,6 +354,7 @@ class cloud_data_client_provider_base_data(base):
 
 
   async def main(self, pool= None, run_params = None, *args, **kwargs):   
+
     self._set_run_params(run_params= run_params)
     if pool == None:
       return await self.__main_poolexecutor(*args, **kwargs)

@@ -73,7 +73,7 @@ class cloud_data_client_azure_client_action(base):
     vmss_data = vmss_action(
       **base_action_params
     )
-    self.__vmss = await vmss_data.main(pool=pool) 
+    self.__vmss = await vmss_data.main(pool=pool, run_params= self.get_runparam_key(data_key= None)) 
 
     self.__cost_by_resource_query_definition = {
       "MTD": self.__get_cost_by_resource_query_definition_mtd(),
@@ -84,7 +84,7 @@ class cloud_data_client_azure_client_action(base):
       **base_action_params
     )
       
-    self.__vm = await vm_data.main(pool=pool)
+    self.__vm = await vm_data.main(pool=pool, run_params= self.get_runparam_key(data_key= None))
       
 
   async def __get_attached_devices_vm_check_os(self, disk, vm_os_disk = None, *args, **kwarg):

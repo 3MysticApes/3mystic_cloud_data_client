@@ -166,33 +166,32 @@ class cloud_data_client_provider_base_client(base):
   
   
   def _set_arguments_from_parameters(self, data_action = None, data_filter = None, data_hideempty = None, data_accounts = None, *args, **kwargs):
+    """
+    If the values for the data_* params are not either None or an empty string it will override whatever is in the arguments from the script call
+    """
     processed_info = self.__get_action_parser_options().process_opts(
       parser = self._get_action_parser()
     )
 
-    if data_hideempty is None or not self.get_common().helper_type().general().is_type(obj= data_hideempty, type_check= bool):
-      data_hideempty = processed_info["processed_data"].get("data_hideempty")
-    
-    data_hideempty = self.get_common().helper_type().bool().is_true(check_value= data_hideempty)
-
-    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= data_action):
-      data_action = processed_info["processed_data"].get("data_action")
-    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= data_filter):
-      data_filter = processed_info["processed_data"].get("data_filter")
-    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= data_filter):
-      data_filter = {}
-    
-    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= data_action):
-      if not self.get_suppres_parser_help():
-        self._get_action_parser().print_help()
-        return None
-    
     self._data_arg_param_values={
       "data_action": data_action,
-      "data_filter": self._process_data_run_filter(data_filter= data_filter),
+      "data_filter": data_filter,
       "data_hideempty": data_hideempty,
       "data_accounts": data_accounts,
     }
+
+    for key, item in self._data_arg_param_values.items():
+      if item is None or self.get_common().helper_type().string().is_null_or_whitespace(string_value= item):
+        self._data_arg_param_values[key] = processed_info["processed_data"].get(key)
+
+
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= self._data_arg_param_values.get("data_action")):
+      if not self.get_suppres_parser_help():
+        self._get_action_parser().print_help()
+        return None
+      
+    self._data_arg_param_values["data_filter"] = self._process_data_run_filter(data_filter= data_filter)
+    self._data_arg_param_values["data_hideempty"] = self.get_common().helper_type().bool().is_true(check_value= self._data_arg_param_values["data_hideempty"])
     
 
   def get_data_action(self, action = None, *args, **kwargs):
