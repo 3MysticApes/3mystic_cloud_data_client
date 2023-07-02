@@ -149,52 +149,118 @@ class cloud_data_client_provider_base_data(base):
       {},
       {
         "data_filter": {},
-        "data_hideempty": False
+        "data_hideempty": False,
+        "data_accounts": None
       },
       run_params
     ])
-  
-  def _process_data_filter_condition_greater_than(self, condition_value, condition, data_item, *args, **kwargs):
-    key_value = condition.get("key")
-    if key_value is None:
-      return True
-    
-    data_value = self.get_common().helper_type().general().get_container_value(container= data_item, value_key= key_value)
 
-    if condition_value[0:1] == "i":
-      self.get_common().helper_type().general().is_type(obj= data_value, type_check= str)
+    if self.__run_params.get("data_accounts") is not None:
+      if not self.get_common().helper_type().general().is_type(obj= self.__run_params.get("data_accounts"), type_check= str):
+        self.__run_params["data_accounts"] = self.get_common().helper_type().string().split(string_value= self.__run_params.get("data_accounts"), separator= "[,;]")
+
+    if not self.get_common().helper_type().general().is_type(obj= self.__run_params.get("data_accounts"), type_check= list)
+      self.__run_params["data_accounts"] = []
+      
+    if self.__run_params["data_accounts"] is None:
+      self.__run_params["data_accounts"] = []
+  
+  
+  def _process_data_filter_condition_in(self, condition, condition_value, data_value, *args, **kwargs):
+    condition_settings = self._process_data_filter_condition_settings("in", condition)
+
+    if condition_settings.get("case_insensitive") is True:
       data_value = self.get_common().helper_type().string().set_case(string_value= data_value, case= "lower")
-      condition["value"] = self.get_common().helper_type().string().set_case(string_value= condition.get("value"), case= "lower")
+      if self.get_common().helper_type().general().is_type(obj= condition_value, type_check= str):
+        condition_value = self.get_common().helper_type().string().set_case(string_value= value, case= "lower")
+      else if self.get_common().helper_type().general().is_type(obj= condition_value, type_check= list):
+        condition_value = [self.get_common().helper_type().string().set_case(string_value= value, case= "lower") for value in condition_value]
+      else:
+        raise self.get_common().exception().exception(
+          exception_type = "argument"
+        ).not_implemented(
+          logger= self.get_common().get_logger(), 
+          name = "condition_value",
+          message = f"condition_value should be either string or list: condition_value - {type(condition_value)}"
+        )
 
-    if condition_value[0:3] == "not" or condition_value[1:3] == "not":
-      return data_value > condition.get("value")
+    if condition_settings.get("not") is True:
+      return data_value not in condition_value
     
-    return data_value > condition.get("value")
+    return data_value in condition_value
   
-  def _process_data_filter_condition_equals(self, condition_value, condition, data_item, *args, **kwargs):
-    key_value = condition.get("key")
-    if key_value is None:
-      return True
-    
-    data_value = self.get_common().helper_type().general().get_container_value(container= data_item, value_key= key_value)
+  def _process_data_filter_condition_less_than(self, condition, condition_value, data_value, *args, **kwargs):
+    condition_settings = self._process_data_filter_condition_settings("lt", condition)
 
-    if condition_value[0:1] == "i":
-      self.get_common().helper_type().general().is_type(obj= data_value, type_check= str)
+    if condition_settings.get("case_insensitive") is True:
       data_value = self.get_common().helper_type().string().set_case(string_value= data_value, case= "lower")
-      condition["value"] = self.get_common().helper_type().string().set_case(string_value= condition.get("value"), case= "lower")
+      condition_value = self.get_common().helper_type().string().set_case(string_value= condition_value, case= "lower")
 
-    if condition_value[0:3] == "not" or condition_value[1:3] == "not":
-      return data_value != condition.get("value")
+    if condition_settings.get("not") is True and condition_settings.get("equals") is False:
+      return not (data_value < condition_value)
     
-    return data_value == condition.get("value")
+    if condition_settings.get("not") is True and condition_settings.get("equals") is True:
+      return not (data_value <= condition_value)
+    
+    if condition_settings.get("equals") is True:
+      return (data_value <= condition_value)
+    
+    return data_value < condition_value
+  
+  def _process_data_filter_condition_greater_than(self, condition, condition_value, data_value, *args, **kwargs):
+    condition_settings = self._process_data_filter_condition_settings("gt", condition)
+
+    if condition_settings.get("case_insensitive") is True:
+      data_value = self.get_common().helper_type().string().set_case(string_value= data_value, case= "lower")
+      condition_value = self.get_common().helper_type().string().set_case(string_value= condition_value, case= "lower")
+
+    if condition_settings.get("not") is True and condition_settings.get("equals") is False:
+      return not (data_value > condition_value)
+    
+    if condition_settings.get("not") is True and condition_settings.get("equals") is True:
+      return not (data_value >= condition_value)
+    
+    if condition_settings.get("equals") is True:
+      return (data_value >= condition_value)
+    
+    return data_value > condition_value
+  
+  def _process_data_filter_condition_equals(self, condition, condition_value, data_value, *args, **kwargs):
+    
+    condition_settings = self._process_data_filter_condition_settings("equals", condition)
+
+    if condition_settings.get("case_insensitive") is True:
+      data_value = self.get_common().helper_type().string().set_case(string_value= data_value, case= "lower")
+      condition_value = self.get_common().helper_type().string().set_case(string_value= condition_value, case= "lower")
+
+    if condition_settings.get("not") is True:
+      return data_value != condition_value
+    
+    return data_value == condition_value
     
   
   
-  def _process_data_filter_condition_attributes(self, condition_value, *args, **kwargs):
-    not_start = condition_value[0:3] == "not"
-    return {
-      "not": True if condition_value[0:3] == "not" or condition_value[1:3] == "not" else False
+  def _process_data_filter_condition_settings(self, condition, condition_value, *args, **kwargs):
+    condition_settings = {
+      "not": False,
+      "case_insensitive": False,
+      "equals": False
     }
+    if condition == condition_value:
+      return condition_settings
+    
+    while condition != condition_value:
+      if condition_value[0:3] == "not":
+        condition_settings["not"] = True
+        continue
+      if condition_value[0:1] == "i":
+        condition_settings["case_insensitive"] = True
+        continue
+      if condition_value[0:1] == "e":
+        condition_settings["equals"] = True
+        continue
+
+    return condition_settings
     
 
   def _process_data_filter_condition(self, condition, data_item, *args, **kwargs):
@@ -203,15 +269,58 @@ class cloud_data_client_provider_base_data(base):
     
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value= condition.get("condition")):
       return True
-  
-    condition_value = self.get_common().helper_type().string().set_case(string_value= condition.get("condition"), case= "lower")
 
-    if condition_value.endswith("equals"):
-      return self._process_data_filter_condition_equals(condition_value= condition_value, condition= condition, data_item= data_item)
+    key_value = condition.get("key")
+    if key_value is None:
+      return True
+    if self.get_common().helper_type().general().is_type(obj= key_value, type_check= str):
+      if self.get_common().helper_type().string().is_null_or_whitespace(string_value= key_value):
+        return True
+
+    condition_operator = self.get_common().helper_type().string().set_case(string_value= condition.get("condition"), case= "lower")
+    data_value = self.get_common().helper_type().general().get_container_value(container= data_item, value_key= key_value)
+
+    if condition_operator.endswith("equals"):
+      return self._process_data_filter_condition_equals(condition= condition_operator, condition_value= condition.get("value"), data_value= data_value)
     
-    if condition_value.endswith("gt"):
-      return self._process_data_filter_condition_equals(condition_value= condition_value, condition= condition, data_item= data_item)
+    if condition_operator.endswith("gt"):
+      return self._process_data_filter_condition_greater_than(condition= condition_operator, condition_value= condition.get("value"), data_value= data_value)
     
+    if condition_operator.endswith("lt"):
+      return self._process_data_filter_condition_less_than(condition= condition_operator, condition_value= condition.get("value"), data_value= data_value)
+    
+    if condition_operator.endswith("in"):
+      return self._process_data_filter_condition_in(condition= condition_operator, condition_value= condition.get("value"), data_value= data_value)
+    
+    if condition_operator.endswith("and"):
+      if condition.get("filters") is None:
+        return True
+      if self.get_common().helper_type().general().is_type(obj= condition.get("filters"), type_check= dict):
+        condition["filters"] = [condition.get("filters")]
+      
+      running_value = True
+      for filter in condition.get("filters"):
+        running_value = running_value and self._process_data_filter_condition(
+          condition= filter,
+          data_item= data_item
+        )
+      
+      return running_value
+    
+    if condition_operator.endswith("or"):
+      if condition.get("filters") is None:
+        return True
+      if self.get_common().helper_type().general().is_type(obj= condition.get("filters"), type_check= dict):
+        condition["filters"] = [condition.get("filters")]
+      
+      running_value = False
+      for filter in condition.get("filters"):
+        running_value = running_value or self._process_data_filter_condition(
+          condition= filter,
+          data_item= data_item
+        )
+      
+      return running_value
 
 
   def _process_data_filter_is_row_valid(self, data_item, *args, **kwargs):

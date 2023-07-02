@@ -23,7 +23,7 @@ class cloud_data_client(base):
     provider = self.get_common().helper_type().string().set_case(string_value= provider, case= "lower") if provider is not None else ""
 
     if provider not in self.get_supported_providers():
-      raise self.get_common().exception(
+      raise self.get_common().exception().exception(
         exception_type = "argument"
       ).not_implemented(
         logger= self.get_logger(),

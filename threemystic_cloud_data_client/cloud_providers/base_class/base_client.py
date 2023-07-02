@@ -78,7 +78,7 @@ class cloud_data_client_provider_base_client(base):
           "default": None,
           "type": str,
           "dest": "data_filter",
-          "help": "Filter: JSON string representing the filter data. ex {\"condition\":\"and\", \"filter\":{\"condition\":\"iequals\",\"key\": [\"properties\",\"storageProfile\",\"osDisk\",\"osType\"], \"value\": \"windows\"}",
+          "help": "Filter: JSON string representing the filter data. ex {\"condition\":\"and\", \"filters\":[{\"condition\":\"iequals\",\"key\": [\"properties\",\"storageProfile\",\"osDisk\",\"osType\"], \"value\": \"windows\"}]}",
           "action": 'store'
         },
         "--hideempty, --hide-empty": {
@@ -86,6 +86,13 @@ class cloud_data_client_provider_base_client(base):
           "dest": "data_hideempty",
           "help": "Hide accounts with no data. Default False",
           "action": 'store_true'
+        },
+        "--account": {
+          "default": None,
+          "type": str,
+          "dest": "data_accounts",
+          "help": "Filter: A comma seperated list of accounts to filter, put a minus to exclude accounts. 123454,12345,-234534",
+          "action": 'store'
         }
       },
       self.get_default_parser_args_actions(),
@@ -158,7 +165,7 @@ class cloud_data_client_provider_base_client(base):
     return data_filter    
   
   
-  def _set_arguments_from_parameters(self, data_action = None, data_filter = None, data_hideempty = None, *args, **kwargs):
+  def _set_arguments_from_parameters(self, data_action = None, data_filter = None, data_hideempty = None, data_accounts = None, *args, **kwargs):
     processed_info = self.__get_action_parser_options().process_opts(
       parser = self._get_action_parser()
     )
@@ -184,6 +191,7 @@ class cloud_data_client_provider_base_client(base):
       "data_action": data_action,
       "data_filter": self._process_data_run_filter(data_filter= data_filter),
       "data_hideempty": data_hideempty,
+      "data_accounts": data_accounts,
     }
     
 
