@@ -1,6 +1,8 @@
 from threemystic_cloud_data_client.cloud_providers.azure.client.actions.base_class.base import cloud_data_client_azure_client_action_base as base
 import asyncio
 from azure.mgmt.storage import StorageManagementClient
+from azure.mgmt.monitor import MonitorManagementClient
+from decimal import Decimal, ROUND_HALF_UP
 
 class cloud_data_client_azure_client_action(base):
   def __init__(self, *args, **kwargs):
@@ -11,7 +13,34 @@ class cloud_data_client_azure_client_action(base):
       *args, **kwargs)
   
   
-    
+  async def _process_account_data_storage_size(self, client, account, storage_account, **kwargs):
+      try:
+        
+        storage_account_name= self.get_cloud_client().get_resource_name_from_resource(resource= storage_account)
+        storage_account_id= self.get_cloud_client().get_resource_id_from_resource(resource= storage_account)
+        storage_size = self.get_cloud_client().sdk_request(
+          tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+          lambda_sdk_command=lambda: client.metrics.list(
+            resource_uri= storage_account_id,
+            timespan= f'{self.get_common().helper_type().datetime().get_iso_datetime(dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= 1)))}/{self.get_common().helper_type().datetime().get_iso_datetime(dt= self.get_data_start())}',
+            interval= "PT1H",
+            metricnames= "UsedCapacity"
+          )
+        )
+        interval_count = 0
+        sum_storage = Decimal(0.0)
+        
+        for interval_value in storage_size.value:
+          for ts in interval_value.timeseries:
+            for data in ts.data:
+              sum_storage += Decimal(data.average)
+              interval_count += 1
+        
+        return Decimal(sum_storage/interval_count).quantize(Decimal('0'), ROUND_HALF_UP) 
+      except Exception as err:
+        print(err)
+        return None
+        
   async def _process_account_data_blob_containers(self, client:StorageManagementClient, account, storage_account, **kwargs):
       try:
         resource_group= self.get_cloud_client().get_resource_group_from_resource(resource= storage_account)
@@ -46,6 +75,7 @@ class cloud_data_client_azure_client_action(base):
   async def _process_account_data(self, account, loop, **kwargs):
 
     client = StorageManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
+    monitor_client = MonitorManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     process_object = await self._process_storage_account_by_page(client= client, account= account)
       
     return {
@@ -61,6 +91,11 @@ class cloud_data_client_azure_client_action(base):
           ),
           {
             "extra_storage_account": item.get("storage_account")
-          }
+          },
+          { "extra_storageaccount_bytes_24hours": await self._process_account_data_storage_size(
+            client= monitor_client,
+            account= account,
+            storage_account= item.get("storage_account")
+          ) } if item.get("container") is None else {}
         ]) for item in process_object]
     }
