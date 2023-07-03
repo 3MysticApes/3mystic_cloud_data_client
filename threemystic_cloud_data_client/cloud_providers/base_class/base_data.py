@@ -136,7 +136,7 @@ class cloud_data_client_provider_base_data(base):
       return self.__run_params
     
     if data_key is not None and data_key in self.__run_params:
-      if self.get_common().helper_type().general().is_type(obj= self.__run_params.get(data_key), type_check= type(default_value)):
+      if default_value is None or self.get_common().helper_type().general().is_type(obj= self.__run_params.get(data_key), type_check= type(default_value)):
         return self.__run_params.get(data_key)
     
     return default_value
@@ -166,15 +166,20 @@ class cloud_data_client_provider_base_data(base):
       if not self.get_common().helper_type().general().is_type(obj= run_params.get("data_accounts"), type_check= list):
         run_params["data_accounts"] = []
     
+    send_account_data_lambda = None
+    if "send_account_data_lambda" in run_params:
+      send_account_data_lambda = run_params.pop("send_account_data_lambda")
+
     self.__run_params = self.get_common().helper_type().dictionary().merge_dictionary([
       {},
       {
         "data_filter": {},
         "data_hideempty": False,
-        "data_accounts": None
+        "data_accounts": None,
       },
       run_params
     ])
+    self.__run_params["send_account_data_lambda"] = send_account_data_lambda
   
   
   def _process_data_filter_condition_in(self, condition, condition_value, data_value, *args, **kwargs):
@@ -426,7 +431,19 @@ class cloud_data_client_provider_base_data(base):
     }
   
   async def _process_account(self, *args, **kwargs):
-    return await self._process_account_data(*args, **kwargs)
+    return_data = await self._process_account_data(*args, **kwargs)
+    if self.get_runparam_key(data_key= "send_account_data_lambda", default_value= None) is None:
+      return return_data
+    
+    await self.get_runparam_key(data_key= "send_account_data_lambda", default_value= None)["handler"](data= {
+      (self.get_runparam_key(data_key= "send_account_data_lambda", default_value= None)["sheet_key"]): {
+        self.get_cloud_client().get_account_id(account= return_data["account"]): return_data.pop("data")
+      }
+    })
+    
+
+    return_data["data"] = []
+    return return_data
   
   async def process_account(self, *args, **kwargs):
     return await self._process_account(*args, **kwargs)
