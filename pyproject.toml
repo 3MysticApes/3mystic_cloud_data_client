@@ -36,7 +36,9 @@ dependencies = [
   "azure-mgmt-managementgroups >= 1.0.0",
   "azure-mgmt-resourcegraph >= 8.0.0",
   "azure-mgmt-costmanagement >= 4.0.0",
-  "azure-mgmt-network >= 23.1.0"
+  "azure-mgmt-network >= 23.1.0",
+  "azure-mgmt-keyvault >= 10.2.2"
+  "azure-keyvault-secrets >= 4.7.0",
 
 ]
 dynamic = ["version"]
