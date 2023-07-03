@@ -135,6 +135,9 @@ class cloud_data_client_provider_base_data(base):
     if data_key is None:
       return self.__run_params
     
+    if data_key == "send_account_data_lambda":
+      return self.__run_params_send_account_data_lambda
+    
     if data_key is not None and data_key in self.__run_params:
       if default_value is None or self.get_common().helper_type().general().is_type(obj= self.__run_params.get(data_key), type_check= type(default_value)):
         return self.__run_params.get(data_key)
@@ -166,9 +169,9 @@ class cloud_data_client_provider_base_data(base):
       if not self.get_common().helper_type().general().is_type(obj= run_params.get("data_accounts"), type_check= list):
         run_params["data_accounts"] = []
     
-    send_account_data_lambda = None
+    self.__run_params_send_account_data_lambda = None
     if "send_account_data_lambda" in run_params:
-      send_account_data_lambda = run_params.pop("send_account_data_lambda")
+      self.__run_params_send_account_data_lambda = run_params.pop("send_account_data_lambda")
 
     self.__run_params = self.get_common().helper_type().dictionary().merge_dictionary([
       {},
@@ -179,7 +182,7 @@ class cloud_data_client_provider_base_data(base):
       },
       run_params
     ])
-    self.__run_params["send_account_data_lambda"] = send_account_data_lambda
+    
   
   
   def _process_data_filter_condition_in(self, condition, condition_value, data_value, *args, **kwargs):
