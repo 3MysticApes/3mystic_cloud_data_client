@@ -93,9 +93,10 @@ class cloud_data_client_azure_client_action(base):
             "extra_storage_account": item.get("storage_account")
           },
           { "extra_storageaccount_bytes_24hours": await self._process_account_data_storage_size(
-            client= monitor_client,
-            account= account,
-            storage_account= item.get("storage_account")
-          ) } if item.get("container") is None else {}
+              client= monitor_client,
+              account= account,
+              storage_account= item.get("storage_account")
+            ) 
+          } if item.get("container") is None else {}
         ]) for item in process_object]
     }
