@@ -33,12 +33,12 @@ class cloud_data_client_azure_client_action(base):
         for interval_value in storage_size.value:
           for ts in interval_value.timeseries:
             for data in ts.data:
-              sum_storage += Decimal(data.average)
+              if data.average is not None:
+                sum_storage += Decimal(data.average)
               interval_count += 1
         
         return Decimal(sum_storage/interval_count).quantize(Decimal('0'), ROUND_HALF_UP) 
       except Exception as err:
-        print(err)
         return None
         
   async def _process_account_data_blob_containers(self, client:StorageManagementClient, account, storage_account, **kwargs):
