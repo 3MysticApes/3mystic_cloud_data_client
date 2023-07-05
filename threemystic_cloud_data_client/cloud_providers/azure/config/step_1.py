@@ -30,9 +30,7 @@ class cloud_data_client_azure_config_step_1(base):
     
     if not self.get_common().helper_type().bool().is_true(check_value= response.get("base_config").get("formated")):
       return
-    
-    from threemystic_cloud_client.cloud_providers.aws import cloud_client_aws as client
-    client( common= self.get_common(), logger= self.get_common().get_logger()).action_config()
+
 
   def step(self, *args, **kwargs):
     
@@ -43,6 +41,7 @@ class cloud_data_client_azure_config_step_1(base):
     print()
     print()
     print(f"No additional config is required at this time for Data Client: {self.get_provider()}")
+    self.update_provider_config_completed(status= True)
     
     self.check_cloud_client(*args, **kwargs)
     

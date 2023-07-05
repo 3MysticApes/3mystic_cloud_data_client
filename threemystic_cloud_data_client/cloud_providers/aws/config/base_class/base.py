@@ -5,5 +5,5 @@ class cloud_data_client_aws_config_base(base):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
-  def step(self, *args, **kwargs):
-    return True
+  def step(self, *args, **kwargs):    
+    return self.ensure_cloud_client_config_completed()

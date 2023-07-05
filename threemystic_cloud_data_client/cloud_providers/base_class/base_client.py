@@ -43,13 +43,13 @@ class cloud_data_client_provider_base_client(base):
         "help": "Data Action: This pulls a general budget to provide you insights in your accounts/subscriptions",
         "action": 'store_const'
       },
-      # "--secrets": {
-      #   "default": None, 
-      #   "const": "secrets",
-      #   "dest": "data_action",
-      #   "help": "Data Action: Pulls Key Vaults Secrets and Keys / Paramater Store",
-      #   "action": 'store_const'
-      # },
+      "--secrets": {
+        "default": None, 
+        "const": "secrets",
+        "dest": "data_action",
+        "help": "Data Action: Pulls Key Vaults Secrets and Keys / Paramater Store",
+        "action": 'store_const'
+      },
       "--storage": {
         "default": None, 
         "const": "storage",
