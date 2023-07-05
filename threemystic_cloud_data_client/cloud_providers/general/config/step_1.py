@@ -54,6 +54,7 @@ class cloud_data_client_general_config_step_1(base):
       for key, item in response.items():
         self._update_config(config_key= key, config_value= item.get("formated"))
       self._save_config()
+      self.update_general_config_completed(status= True)
       print("-----------------------------")
       print()
       print()

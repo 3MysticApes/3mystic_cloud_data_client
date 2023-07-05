@@ -42,7 +42,6 @@ class cloud_data_client_aws_config_step_1(base):
     print()
     print()
     print(f"No additional config is required at this time for Data Client: {self.get_provider()}")
-    self.update_provider_config_completed(status= True)
     
     self.check_cloud_client(*args, **kwargs)
 
