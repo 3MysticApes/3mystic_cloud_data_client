@@ -75,11 +75,11 @@ class cloud_data_client_provider_base_client(base):
   
   def get_data_only_parser_args_actions(self, *args, **kwargs):
     return {
-      # "--cloudstorage": {
+      # "--dns": {
       #   "default": None, 
-      #   "const": "cloudstorage",
+      #   "const": "dns",
       #   "dest": "data_action",
-      #   "help": "Data Action: This pulls Cloud Storage (S3/Storage Accounts) for the provider",
+      #   "help": "Data Action: This pulls DNS Data (private DNS/Public/Route53)",
       #   "action": 'store_const' # could look into append_const
       # },
     }
