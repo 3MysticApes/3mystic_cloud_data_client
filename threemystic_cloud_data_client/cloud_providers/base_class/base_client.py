@@ -73,6 +73,17 @@ class cloud_data_client_provider_base_client(base):
       }
     }
   
+  def get_data_only_parser_args_actions(self, *args, **kwargs):
+    return {
+      # "--cloudstorage": {
+      #   "default": None, 
+      #   "const": "cloudstorage",
+      #   "dest": "data_action",
+      #   "help": "Data Action: This pulls Cloud Storage (S3/Storage Accounts) for the provider",
+      #   "action": 'store_const' # could look into append_const
+      # },
+    }
+  
   def get_parser_args(self, *args, **kwargs):
     if hasattr(self, "_data_parser_args"):
       return self._data_parser_args
@@ -103,6 +114,7 @@ class cloud_data_client_provider_base_client(base):
         }
       },
       self.get_default_parser_args_actions(),
+      self.get_data_only_parser_args_actions()
     ])
     return self.get_parser_args()
   

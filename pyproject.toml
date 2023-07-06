@@ -37,6 +37,8 @@ dependencies = [
   "azure-mgmt-resourcegraph == 8.*",
   "azure-mgmt-costmanagement == 4.*",
   "azure-mgmt-network == 23.*",
+  "azure-mgmt-privatedns == 1.*"
+  "azure-mgmt-dns == 8.*"
   "azure-mgmt-monitor == 5.*",
   "azure-mgmt-keyvault == 10.*",
   "azure-keyvault-administration == 4.*",
