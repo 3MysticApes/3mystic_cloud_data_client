@@ -23,17 +23,29 @@ class cloud_data_client_azure_client_action(base):
       }
            
     except Exception as err:
+      self.get_common().get_logger().exception(
+        msg= f"__process_get_resources_public: {err}",
+        extra={
+          "exception": err
+        }
+      )
       return {}
   
   async def __process_get_resources_public_record_sets(self, client, account, dns, *args, **kwargs):    
     try:      
       return [ record_set for record_set in self.get_cloud_client().sdk_request(
           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-          lambda_sdk_command=lambda: client.record_sets.list(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= dns), private_zone_name= dns.name)
+          lambda_sdk_command=lambda: client.record_sets.list_all_by_dns_zone(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= dns), private_zone_name= dns.name)
         )
       ]
            
     except Exception as err:
+      self.get_common().get_logger().exception(
+        msg= f"__process_get_resources_public_record_sets: {err}",
+        extra={
+          "exception": err
+        }
+      )
       return []
   
   async def __process_get_resources_private_dns(self, client, account, *args, **kwargs):    
@@ -45,6 +57,12 @@ class cloud_data_client_azure_client_action(base):
       }
            
     except Exception as err:
+      self.get_common().get_logger().exception(
+        msg= f"__process_get_resources_private_dns: {err}",
+        extra={
+          "exception": err
+        }
+      )
       return {}
   
   async def __process_get_resources_private_dns_network(self, client, account, dns, *args, **kwargs):    
@@ -56,6 +74,12 @@ class cloud_data_client_azure_client_action(base):
       ]
            
     except Exception as err:
+      self.get_common().get_logger().exception(
+        msg= f"__process_get_resources_private_dns_network: {err}",
+        extra={
+          "exception": err
+        }
+      )
       return []
   
   async def __process_get_resources_private_dns_record_sets(self, client, account, dns, *args, **kwargs):    
@@ -67,6 +91,12 @@ class cloud_data_client_azure_client_action(base):
       ]
            
     except Exception as err:
+      self.get_common().get_logger().exception(
+        msg= f"__process_get_resources_private_dns_record_sets: {err}",
+        extra={
+          "exception": err
+        }
+      )
       return []
   
   async def __process_get_resources_resource_dns(self, account, *args, **kwargs):    
@@ -78,6 +108,12 @@ class cloud_data_client_azure_client_action(base):
           )
         }
     except Exception as err:
+      self.get_common().get_logger().exception(
+        msg= f"__process_get_resources_resource_dns: {err}",
+        extra={
+          "exception": err
+        }
+      )
       return {}
   
   async def __process_get_resources_dns_get(self, client_private, client_public, account, dns, value, *args, **kwargs):    
@@ -98,12 +134,17 @@ class cloud_data_client_azure_client_action(base):
           )
            
     except Exception as err:
-      print(err)
+      self.get_common().get_logger().exception(
+        msg= f"__process_get_resources_dns_get: {err}",
+        extra={
+          "exception": err
+        }
+      )
       return dns
     
   
   async def _process_account_data(self, account, loop, *args, **kwargs):
-    
+
     privatedns_client = PrivateDnsManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     publicdns_client = DnsManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     
@@ -115,8 +156,10 @@ class cloud_data_client_azure_client_action(base):
 
     await asyncio.wait(tasks.values())
     tasks_data = {}
+
     for id, dns in tasks["resources"].result().items():
       resource_type = self.get_common().helper_type().string().set_case(string_value= dns.type, case= "lower")
+      
       tasks_data[f'{id};item'] = loop.create_task(self.__process_get_resources_dns_get(
         client_private= privatedns_client,
         client_public= publicdns_client,
@@ -138,18 +181,14 @@ class cloud_data_client_azure_client_action(base):
         ))
         continue
         
-      
       tasks_data[f'{id};record_sets'] = loop.create_task(self.__process_get_resources_public_record_sets(
-        client= privatedns_client,
+        client= publicdns_client,
         account= account,
         dns= dns
       ))
-      break
     
     if len(tasks_data) > 0:
       await asyncio.wait(tasks_data.values())
-
-    
 
     return {
       "account": account,
