@@ -65,7 +65,7 @@ class cloud_data_client_azure_client_action(base):
 
     except Exception as err:
       self.get_common().get_logger().exception(
-        msg= f"__process_get_db_cosmos: {err}",
+        msg= f"__process_get_db_sql: {err}",
         extra={
           "exception": err
         }
@@ -97,8 +97,101 @@ class cloud_data_client_azure_client_action(base):
         }
       )
       return []
+  
+  async def __process_get_db_mysql(self, client, account, *args, **kwargs):    
+    try:
 
-  async def __process_get_db_cosmos(self, client, account, *args, **kwargs):    
+      return_data = []
+      for db in self.get_cloud_client().sdk_request(
+        tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+        lambda_sdk_command=lambda: client.servers.list()
+        ):
+        return_data.append(
+          {"extra":{
+            "extra_dbtype": "mysql",
+            "extra_databases": [ self.get_cloud_client().serialize_azresource(resource= pool) for pool in self.get_cloud_client().sdk_request(
+              tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+              lambda_sdk_command=lambda: client.databases.list_by_server(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= db), server_name= db.name)
+              )
+            ]
+          }, "resource": db 
+        }) 
+      
+      return return_data
+
+
+    except Exception as err:
+      self.get_common().get_logger().exception(
+        msg= f"__process_get_db_mysql: {err}",
+        extra={
+          "exception": err
+        }
+      )
+      return []
+  
+  async def __process_get_db_postgres(self, client, account, *args, **kwargs):    
+    try:
+
+      return_data = []
+      for db in self.get_cloud_client().sdk_request(
+        tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+        lambda_sdk_command=lambda: client.sql_virtual_machines.list()
+        ):
+        return_data.append(
+          {"extra":{
+            "extra_dbtype": "postgres",
+            "extra_databases": [ self.get_cloud_client().serialize_azresource(resource= pool) for pool in self.get_cloud_client().sdk_request(
+              tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+              lambda_sdk_command=lambda: client.databases.list_by_server(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= db), server_name= db.name)
+              )
+            ]
+          }, "resource": db 
+        }) 
+      
+      return return_data
+
+
+    except Exception as err:
+      self.get_common().get_logger().exception(
+        msg= f"__process_get_db_postgres: {err}",
+        extra={
+          "exception": err
+        }
+      )
+      return []
+  
+  async def __process_get_db_mariadb(self, client, account, *args, **kwargs):    
+    try:
+
+      return_data = []
+      for db in self.get_cloud_client().sdk_request(
+        tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+        lambda_sdk_command=lambda: client.sql_virtual_machines.list()
+        ):
+        return_data.append(
+          {"extra":{
+            "extra_dbtype": "mariadb",
+            "extra_databases": [ self.get_cloud_client().serialize_azresource(resource= pool) for pool in self.get_cloud_client().sdk_request(
+              tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+              lambda_sdk_command=lambda: client.databases.list_by_server(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= db), server_name= db.name)
+              )
+            ]
+          }, "resource": db 
+        }) 
+      
+      return return_data
+
+
+    except Exception as err:
+      self.get_common().get_logger().exception(
+        msg= f"__process_get_db_maria: {err}",
+        extra={
+          "exception": err
+        }
+      )
+      return []
+
+  async def __process_get_db_cosmosdb(self, client, account, *args, **kwargs):    
     try:
       # I need to look into this more but the cassandra clusters list seems to be standalone
       # client.cassandra_clusters.list_by_subscription
@@ -135,12 +228,12 @@ class cloud_data_client_azure_client_action(base):
     postgres_client = PostgreSQLManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     
     tasks = {
-       "cosmosdb_client": loop.create_task(self.__process_get_db_cosmos(client= cosmosdb_client,account= account)),
+       "cosmosdb_client": loop.create_task(self.__process_get_db_cosmosdb(client= cosmosdb_client,account= account)),
        "sql_client": loop.create_task(self.__process_get_db_sql(client= sql_client,account= account)),
        "sqlvm_client": loop.create_task(self.__process_get_db_sqlvm(client= sqlvm_client,account= account)),
-       "mysql_client": loop.create_task(self.__process_get_db_cosmos(client= cosmosdb_client,account= account)),
-       "mariadb_client": loop.create_task(self.__process_get_db_cosmos(client= cosmosdb_client,account= account)),
-       "postgres_client": loop.create_task(self.__process_get_db_cosmos(client= cosmosdb_client,account= account)),
+       "mysql_client": loop.create_task(self.__process_get_db_mysql(client= mysql_client,account= account)),
+       "mariadb_client": loop.create_task(self.__process_get_db_mariadb(client= mariadb_client,account= account)),
+       "postgres_client": loop.create_task(self.__process_get_db_postgres(client= postgres_client,account= account)),
     }
 
     return {
