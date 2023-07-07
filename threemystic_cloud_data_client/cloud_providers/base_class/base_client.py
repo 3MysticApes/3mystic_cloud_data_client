@@ -89,6 +89,13 @@ class cloud_data_client_provider_base_client(base):
         "help": "Data Action: This pulls Data Warehouse (Synapse/RedShift)",
         "action": 'store_const'
       },
+      "--db": {
+        "default": None, 
+        "const": "database",
+        "dest": "data_action",
+        "help": "Data Action: This pulls the various non-inmemory databses",
+        "action": 'store_const'
+      },
     }
   
   def get_parser_args(self, *args, **kwargs):
