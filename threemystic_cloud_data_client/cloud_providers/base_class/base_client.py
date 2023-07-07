@@ -80,7 +80,14 @@ class cloud_data_client_provider_base_client(base):
         "const": "dns",
         "dest": "data_action",
         "help": "Data Action: This pulls DNS Data (private DNS/Public/Route53)",
-        "action": 'store_const' # could look into append_const
+        "action": 'store_const'
+      },
+      "--datawarehouse": {
+        "default": None, 
+        "const": "datawarehouse",
+        "dest": "data_action",
+        "help": "Data Action: This pulls Data Warehouse (Synapse/RedShift)",
+        "action": 'store_const'
       },
     }
   
