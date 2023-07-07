@@ -135,12 +135,12 @@ class cloud_data_client_azure_client_action(base):
     postgres_client = PostgreSQLManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     
     tasks = {
-       "cosmosdb": loop.create_task(self.__process_get_db_cosmos(client= cosmosdb_client,account= account)),
+       "cosmosdb_client": loop.create_task(self.__process_get_db_cosmos(client= cosmosdb_client,account= account)),
        "sql_client": loop.create_task(self.__process_get_db_sql(client= sql_client,account= account)),
-       "sqlvm": loop.create_task(self.__process_get_db_sqlvm(client= sqlvm_client,account= account)),
-       "cosmosdb": loop.create_task(self.__process_get_db_cosmos(client= cosmosdb_client,account= account)),
-       "cosmosdb": loop.create_task(self.__process_get_db_cosmos(client= cosmosdb_client,account= account)),
-       "cosmosdb": loop.create_task(self.__process_get_db_cosmos(client= cosmosdb_client,account= account)),
+       "sqlvm_client": loop.create_task(self.__process_get_db_sqlvm(client= sqlvm_client,account= account)),
+       "mysql_client": loop.create_task(self.__process_get_db_cosmos(client= cosmosdb_client,account= account)),
+       "mariadb_client": loop.create_task(self.__process_get_db_cosmos(client= cosmosdb_client,account= account)),
+       "postgres_client": loop.create_task(self.__process_get_db_cosmos(client= cosmosdb_client,account= account)),
     }
 
     return {
