@@ -66,6 +66,13 @@ class cloud_data_client_provider_base_data(base):
   
   async def _pre_load_main_process(self, *args, **kwargs):
     pass
+
+  async def _get_environment(self, account = None, resource = None, *args, **kwargs):
+    resource_name = self.get_cloud_client().get_resource_name(resource= resource)
+    account_name = self.get_cloud_client().get_account_name(account= account)
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= resource_name):
+      for name in self.get_nonprod_names():
+        pass
   
   def get_base_return_data(self, account= None, resource_id = None, resource = None, region= None, resource_groups= None, *args, **kwargs):
     resource_data = self.get_common().helper_type().dictionary().merge_dictionary([
@@ -74,11 +81,12 @@ class cloud_data_client_provider_base_data(base):
         "extra_account": self.get_cloud_client().serialize_azresource(resource= account),
         "extra_region": (
           region if not None else (
-            self.get_cloud_client().get_azresource_location(resource= resource) if resource is not None else None)),
+            self.get_cloud_client().get_resource_location(resource= resource) if resource is not None else None)),
         "extra_resourcegroups": resource_groups,
+        "extra_environment": 
         "extra_id": (
           resource_id if not None else (
-            self.get_cloud_client().get_azresource_location(resource= resource) if resource is not None else (
+            self.get_cloud_client().get_resource_location(resource= resource) if resource is not None else (
             self.get_cloud_client().get_account_id(account= account) if account is not None else  None))),
       },
       self.get_cloud_client().serialize_azresource(resource= resource) if resource is not None else self.get_cloud_client().serialize_azresource(resource= account)

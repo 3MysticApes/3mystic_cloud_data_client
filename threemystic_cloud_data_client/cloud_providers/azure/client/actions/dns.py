@@ -199,7 +199,7 @@ class cloud_data_client_azure_client_action(base):
             account= self.get_cloud_client().serialize_azresource(resource= account),
             resource_id= self.get_cloud_client().get_resource_id_from_resource(resource= tasks_data[f'{id};item'].result()),
             resource= tasks_data[f'{id};item'].result(),
-            region= self.get_cloud_client().get_azresource_location(resource= tasks_data[f'{id};item'].result()),
+            region= self.get_cloud_client().get_resource_location(resource= tasks_data[f'{id};item'].result()),
             resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= tasks_data[f'{id};item'].result())],
           ),
           {

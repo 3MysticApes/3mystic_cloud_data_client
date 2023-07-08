@@ -1,5 +1,6 @@
 from threemystic_cloud_data_client.cloud_providers.general.config.base_class.base import cloud_data_client_general_config_base as base
 from threemystic_common.base_class.generate_data.generate_data_handlers import generate_data_handlers
+from threemystic_cloud_data_client.cloud_providers.general.step_2 import cloud_data_client_general_config_step_2 as step
 
 
 
@@ -54,7 +55,7 @@ class cloud_data_client_general_config_step_1(base):
       for key, item in response.items():
         self._update_config(config_key= key, config_value= item.get("formated"))
       self._save_config()
-      self.update_general_config_completed(status= True)
+      
       print("-----------------------------")
       print()
       print()
@@ -62,6 +63,22 @@ class cloud_data_client_general_config_step_1(base):
       print()
       print()
       print("-----------------------------")
+
+      # next_step = step(common= self.get_common(), logger= self.get_logger())
+      
+      # return next_step.step()
+    
+
+    
+      print("-----------------------------")
+      print()
+      print()
+      print("Base Configuration NOT updated")
+      print()
+      print()
+      print("-----------------------------")
+    
+
 
     
     
