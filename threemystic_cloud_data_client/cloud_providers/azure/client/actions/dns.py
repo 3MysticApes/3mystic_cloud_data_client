@@ -195,16 +195,16 @@ class cloud_data_client_azure_client_action(base):
       "data": [
           self.get_common().helper_type().dictionary().merge_dictionary([
           {},
-          self.get_base_return_data(
-            account= self.get_cloud_client().serialize_azresource(resource= account),
+          await self.get_base_return_data(
+            account= self.get_cloud_client().serialize_resource(resource= account),
             resource_id= self.get_cloud_client().get_resource_id_from_resource(resource= tasks_data[f'{id};item'].result()),
             resource= tasks_data[f'{id};item'].result(),
             region= self.get_cloud_client().get_resource_location(resource= tasks_data[f'{id};item'].result()),
             resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= tasks_data[f'{id};item'].result())],
           ),
           {
-            "extra_record_sets": [ self.get_cloud_client().serialize_azresource(resource= zone) for zone in tasks_data[f'{id};record_sets'].result() ] if tasks_data[f'{id};record_sets'].result() is not None else None,
-            "extra_vnet_link": [ self.get_cloud_client().serialize_azresource(resource= link) for link in tasks_data[f'{id};network'].result() ] if self.get_common().helper_type().string().set_case(string_value= raw_resource.type, case= "lower") == "microsoft.network/privatednszones" and tasks_data[f'{id};network'].result() is not None else None,
+            "extra_record_sets": [ self.get_cloud_client().serialize_resource(resource= zone) for zone in tasks_data[f'{id};record_sets'].result() ] if tasks_data[f'{id};record_sets'].result() is not None else None,
+            "extra_vnet_link": [ self.get_cloud_client().serialize_resource(resource= link) for link in tasks_data[f'{id};network'].result() ] if self.get_common().helper_type().string().set_case(string_value= raw_resource.type, case= "lower") == "microsoft.network/privatednszones" and tasks_data[f'{id};network'].result() is not None else None,
           },
         ]) for id, raw_resource in tasks["resources"].result().items()
       ]

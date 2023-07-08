@@ -21,8 +21,8 @@ class cloud_data_client_azure_client_action(base):
         "data": [
            self.get_common().helper_type().dictionary().merge_dictionary([
             {},
-            self.get_base_return_data(
-              account= self.get_cloud_client().serialize_azresource(resource= account),
+            await self.get_base_return_data(
+              account= self.get_cloud_client().serialize_resource(resource= account),
               resource_id= self.get_cloud_client().get_resource_id_from_resource(resource= item),
               resource= item,
               region= self.get_cloud_client().get_resource_location(resource= item),

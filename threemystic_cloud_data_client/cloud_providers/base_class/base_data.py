@@ -70,34 +70,34 @@ class cloud_data_client_provider_base_data(base):
   async def _get_environment(self, account = None, resource = None, *args, **kwargs):
     resource_name = self.get_cloud_client().get_resource_name(resource= resource)
     account_name = self.get_cloud_client().get_account_name(account= account)
-    
+
     if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= resource_name):
-      for name in self.get_nonprod_names():
+      for name in self.get_cloud_data_client().get_nonprod_names():
         if name in resource_name:
           return "nonprod"
     
-    for name in self.get_nonprod_names():
+    for name in self.get_cloud_data_client().get_nonprod_names():
       if name in account_name:
         return "nonprod"
       
     return "prod"
   
-  def get_base_return_data(self, account= None, resource_id = None, resource = None, region= None, resource_groups= None, *args, **kwargs):
+  async def get_base_return_data(self, account= None, resource_id = None, resource = None, region= None, resource_groups= None, *args, **kwargs):
     resource_data = self.get_common().helper_type().dictionary().merge_dictionary([
       {},
       {
-        "extra_account": self.get_cloud_client().serialize_azresource(resource= account),
+        "extra_account": self.get_cloud_client().serialize_resource(resource= account),
         "extra_region": (
           region if not None else (
             self.get_cloud_client().get_resource_location(resource= resource) if resource is not None else None)),
         "extra_resourcegroups": resource_groups,
-        "extra_environment": self._get_environment(account= account, resource= resource)
+        "extra_environment": await self._get_environment(account= account, resource= resource),
         "extra_id": (
           resource_id if not None else (
             self.get_cloud_client().get_resource_location(resource= resource) if resource is not None else (
             self.get_cloud_client().get_account_id(account= account) if account is not None else  None))),
       },
-      self.get_cloud_client().serialize_azresource(resource= resource) if resource is not None else self.get_cloud_client().serialize_azresource(resource= account)
+      self.get_cloud_client().serialize_resource(resource= resource) if resource is not None else self.get_cloud_client().serialize_resource(resource= account)
     ])
 
     resource_data["extra_resourcegroups"] = self.get_common().helper_type().list().unique_list(

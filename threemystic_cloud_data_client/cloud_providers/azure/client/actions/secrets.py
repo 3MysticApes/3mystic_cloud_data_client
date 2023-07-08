@@ -79,7 +79,7 @@ class cloud_data_client_azure_client_action(base):
     # keyvaults = await self.__process_get_resources_key_vaults(account= account)
 
     # for kv in keyvaults.values():
-    #   print(self.get_cloud_client().serialize_azresource(resource= kv))
+    #   print(self.get_cloud_client().serialize_resource(resource= kv))
     #   break
     
     return {
@@ -87,15 +87,15 @@ class cloud_data_client_azure_client_action(base):
         "data": [
           #  self.get_common().helper_type().dictionary().merge_dictionary([
           #   {},
-          #   self.get_base_return_data(
-          #     account= self.get_cloud_client().serialize_azresource(resource= account),
+          #   await self.get_base_return_data(
+          #     account= self.get_cloud_client().serialize_resource(resource= account),
           #     resource_id= self.get_cloud_client().get_resource_id_from_resource(resource= item),
           #     resource= item,
           #     region= self.get_cloud_client().get_resource_location(resource= item),
           #     resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
           #   ),
           #   {
-          #     "extra_resource": self.get_cloud_client().serialize_azresource(tasks["resource"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item))),
+          #     "extra_resource": self.get_cloud_client().serialize_resource(tasks["resource"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item))),
           #     "extra_availability_set": tasks["availability_sets"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item)),
           #     "extra_nics": tasks["nics"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item)),
           #     "extra_load_balancers": await self._process_account_data_get_vm_load_balancers(

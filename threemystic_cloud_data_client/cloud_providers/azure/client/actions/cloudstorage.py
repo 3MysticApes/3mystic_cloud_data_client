@@ -45,7 +45,7 @@ class cloud_data_client_azure_client_action(base):
       try:
         resource_group= self.get_cloud_client().get_resource_group_from_resource(resource= storage_account)
         storage_account_name= self.get_cloud_client().get_resource_name_from_resource(resource= storage_account)
-        return [self.get_cloud_client().serialize_azresource(resource= item) for item in self.get_cloud_client().sdk_request(
+        return [self.get_cloud_client().serialize_resource(resource= item) for item in self.get_cloud_client().sdk_request(
           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
           lambda_sdk_command=lambda: client.blob_containers.list(resource_group_name= resource_group, account_name= storage_account_name)
         )]
@@ -82,8 +82,8 @@ class cloud_data_client_azure_client_action(base):
         "account": account,
         "data": [ self.get_common().helper_type().dictionary().merge_dictionary([
           {},
-          self.get_base_return_data(
-            account= self.get_cloud_client().serialize_azresource(resource= account),
+          await self.get_base_return_data(
+            account= self.get_cloud_client().serialize_resource(resource= account),
             resource_id= self.get_cloud_client().get_resource_id_from_resource(resource= item.get("container") if item.get("container") is not None else item.get("storage_account")),
             resource = item.get("container"),
             region= self.get_cloud_client().get_resource_location(resource= item.get("storage_account")),

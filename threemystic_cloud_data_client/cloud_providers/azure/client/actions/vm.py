@@ -33,7 +33,7 @@ class cloud_data_client_azure_client_action(base):
     try:
       client = NetworkManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
       return_data = {}
-      load_balancers = {self.get_cloud_client().get_resource_id_from_resource(resource= lb): {"serialized": self.get_cloud_client().serialize_azresource(resource= lb), "raw": lb} for lb in self.get_cloud_client().sdk_request(
+      load_balancers = {self.get_cloud_client().get_resource_id_from_resource(resource= lb): {"serialized": self.get_cloud_client().serialize_resource(resource= lb), "raw": lb} for lb in self.get_cloud_client().sdk_request(
           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
           lambda_sdk_command=lambda: client.load_balancers.list_all()
         )}
@@ -94,7 +94,7 @@ class cloud_data_client_azure_client_action(base):
                 {
                   "load_balancer": lb["serialized"],
                   "extra_public_ips": [
-                    self.get_cloud_client().serialize_azresource(resource= public_ips[ip_id])
+                    self.get_cloud_client().serialize_resource(resource= public_ips[ip_id])
                     for ip_id in backend_frontend_connector if public_ips.get(ip_id) is not None
                   ]
                 }
@@ -122,10 +122,10 @@ class cloud_data_client_azure_client_action(base):
             {},
             {
               "extra_public_ips": [
-                self.get_cloud_client().serialize_azresource(resource= public_ips[self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.public_ip_address)])
+                self.get_cloud_client().serialize_resource(resource= public_ips[self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.public_ip_address)])
                 for ip_config in nic.ip_configurations if self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.public_ip_address) is not None]
             },
-            self.get_cloud_client().serialize_azresource(resource= nic)
+            self.get_cloud_client().serialize_resource(resource= nic)
           ])
           if return_data.get( self.get_cloud_client().get_resource_id_from_resource(resource= nic.virtual_machine)) is not None:
             return_data.get( self.get_cloud_client().get_resource_id_from_resource(resource= nic.virtual_machine)).append(
@@ -154,7 +154,7 @@ class cloud_data_client_azure_client_action(base):
           lambda_sdk_command=lambda: client.availability_sets.list_by_subscription()
         ):
           for vm in availability_set.virtual_machines:
-            return_data[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = self.get_cloud_client().serialize_azresource(resource= availability_set)
+            return_data[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = self.get_cloud_client().serialize_resource(resource= availability_set)
       
       return return_data
     except Exception as err:
@@ -200,15 +200,15 @@ class cloud_data_client_azure_client_action(base):
         "account": account,
         "data": [ self.get_common().helper_type().dictionary().merge_dictionary([
             {},
-            self.get_base_return_data(
-              account= self.get_cloud_client().serialize_azresource(resource= account),
+            await self.get_base_return_data(
+              account= self.get_cloud_client().serialize_resource(resource= account),
               resource_id= self.get_cloud_client().get_resource_id_from_resource(resource= item),
               resource= item,
               region= self.get_cloud_client().get_resource_location(resource= item),
               resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
             ),
             {
-              "extra_resource": self.get_cloud_client().serialize_azresource(tasks["resource"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item))),
+              "extra_resource": self.get_cloud_client().serialize_resource(tasks["resource"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item))),
               "extra_availability_set": tasks["availability_sets"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item)),
               "extra_nics": tasks["nics"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item)),
               "extra_load_balancers": await self._process_account_data_get_vm_load_balancers(

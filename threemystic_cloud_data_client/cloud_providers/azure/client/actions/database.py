@@ -35,7 +35,7 @@ class cloud_data_client_azure_client_action(base):
         return_data.append({
           "extra":{
             "extra_dbtype": "sql",
-            "extra_databases": [ self.get_cloud_client().serialize_azresource(resource= pool) for pool in self.get_cloud_client().sdk_request(
+            "extra_databases": [ self.get_cloud_client().serialize_resource(resource= pool) for pool in self.get_cloud_client().sdk_request(
               tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
               lambda_sdk_command=lambda: client.databases.list_by_server(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= db), server_name= db.name)
               )
@@ -44,13 +44,13 @@ class cloud_data_client_azure_client_action(base):
               self.get_common().helper_type().dictionary().merge_dictionary([
                 {},
                 {
-                  "extra_databases": [ self.get_cloud_client().serialize_azresource(resource= pool) for pool in self.get_cloud_client().sdk_request(
+                  "extra_databases": [ self.get_cloud_client().serialize_resource(resource= pool) for pool in self.get_cloud_client().sdk_request(
                     tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
                     lambda_sdk_command=lambda: client.databases.list_by_elastic_pool(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= db), server_name= db.name, elastic_pool_name= pool.name)
                     )
                   ]
                 },
-                self.get_cloud_client().serialize_azresource(resource= pool)]) for pool in self.get_cloud_client().sdk_request(
+                self.get_cloud_client().serialize_resource(resource= pool)]) for pool in self.get_cloud_client().sdk_request(
               tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
               lambda_sdk_command=lambda: client.elastic_pools.list_by_server(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= db), server_name= db.name)
               )
@@ -109,7 +109,7 @@ class cloud_data_client_azure_client_action(base):
         return_data.append(
           {"extra":{
             "extra_dbtype": "mysql",
-            "extra_databases": [ self.get_cloud_client().serialize_azresource(resource= pool) for pool in self.get_cloud_client().sdk_request(
+            "extra_databases": [ self.get_cloud_client().serialize_resource(resource= pool) for pool in self.get_cloud_client().sdk_request(
               tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
               lambda_sdk_command=lambda: client.databases.list_by_server(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= db), server_name= db.name)
               )
@@ -140,7 +140,7 @@ class cloud_data_client_azure_client_action(base):
         return_data.append(
           {"extra":{
             "extra_dbtype": "postgres",
-            "extra_databases": [ self.get_cloud_client().serialize_azresource(resource= pool) for pool in self.get_cloud_client().sdk_request(
+            "extra_databases": [ self.get_cloud_client().serialize_resource(resource= pool) for pool in self.get_cloud_client().sdk_request(
               tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
               lambda_sdk_command=lambda: client.databases.list_by_server(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= db), server_name= db.name)
               )
@@ -171,7 +171,7 @@ class cloud_data_client_azure_client_action(base):
         return_data.append(
           {"extra":{
             "extra_dbtype": "mariadb",
-            "extra_databases": [ self.get_cloud_client().serialize_azresource(resource= pool) for pool in self.get_cloud_client().sdk_request(
+            "extra_databases": [ self.get_cloud_client().serialize_resource(resource= pool) for pool in self.get_cloud_client().sdk_request(
               tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
               lambda_sdk_command=lambda: client.databases.list_by_server(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= db), server_name= db.name)
               )
@@ -248,8 +248,8 @@ class cloud_data_client_azure_client_action(base):
       for item in db_data.result():
         return_data["data"].append( self.get_common().helper_type().dictionary().merge_dictionary([
             {},
-            self.get_base_return_data(
-              account= self.get_cloud_client().serialize_azresource(resource= account),
+            await self.get_base_return_data(
+              account= self.get_cloud_client().serialize_resource(resource= account),
               resource_id= self.get_cloud_client().get_resource_id_from_resource(resource= item.get("resource")),
               resource= item.get("resource"),
               region= self.get_cloud_client().get_resource_location(resource= item.get("resource")),
