@@ -82,16 +82,23 @@ class cloud_data_client_provider_base_data(base):
       
     return "prod"
   
-  async def get_base_return_data(self, account= None, resource_id = None, resource = None, region= None, resource_groups= None, *args, **kwargs):
+  async def get_base_return_data(self, account= None, resource_id = None, resource = None, region= None, resource_groups= None, resource_tags_resource = None, *args, **kwargs):
+    
     resource_data = self.get_common().helper_type().dictionary().merge_dictionary([
       {},
       {
-        "extra_account": self.get_cloud_client().serialize_resource(resource= account),
+        "extra_account": self.get_common().helper_type().dictionary().merge_dictionary([
+          {},
+          {"extra_environment": await self._get_environment(account= account),
+           "extra_tags": self.get_cloud_client().get_resource_tags_as_dictionary(resource= account)}
+          self.get_cloud_client().serialize_resource(resource= account),
+        ]),
         "extra_region": (
           region if not None else (
             self.get_cloud_client().get_resource_location(resource= resource) if resource is not None else None)),
         "extra_resourcegroups": resource_groups,
         "extra_environment": await self._get_environment(account= account, resource= resource),
+        "extra_tags": self.get_cloud_client().get_resource_tags_as_dictionary(resource= (resource if resource_tags_resource is None else resource_tags_resource)),
         "extra_id": (
           resource_id if not None else (
             self.get_cloud_client().get_resource_location(resource= resource) if resource is not None else (
