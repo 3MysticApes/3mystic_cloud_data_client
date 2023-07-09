@@ -93,6 +93,39 @@ class cloud_data_client_provider_base(base):
     
     return {}
 
+  def reset_config_environment_data(self, *args, **kwargs):    
+    self.get_config()["environment"] = {}
+    self._save_config()
+
+  def has_tag_data_config(self, refresh = False, *args, **kwargs):
+    
+    if len(self.get_config_environment_data(refresh= refresh)) < 1:
+      return False
+
+    return True
+
+  def get_config_environment_data(self, refresh = False, *args, **kwargs):
+    if self.get_config(refresh= refresh).get("environment") is not None:
+      return self.get_config().get("environment")
+    
+    self.get_config()["environment"] = {}
+    self._save_config()
+     
+    return self.get_config_environment_data(*args, **kwargs)
+
+  def _update_config_environment_data(self,config_key, config_value, refresh = False,  *args, **kwargs):
+     self.get_config_environment_data(refresh = refresh)[config_key] = config_value
+     
+  def _save_config_environment_data(self, *args, **kwargs):
+     self._save_config()
+  
+  def get_environment_data_config_value(self, config_key, default_if_none = None, refresh = False, *args, **kwargs):
+    config_value = self.get_config_environment_data(refresh= refresh).get(config_key)
+    if config_value is not None:
+      return config_value
+    
+    return default_if_none
+  
   def config_path(self, *args, **kwargs):
     return self.get_common().get_threemystic_directory_config().joinpath(f"{self.get_main_directory_name()}/config")
   

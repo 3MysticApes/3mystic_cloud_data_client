@@ -27,9 +27,12 @@ class cloud_data_client_general_config_step_2(base):
     print()
     print()
     print()
+    self.step_tag_new()
+  
+  def step_tag_new(self, *args, **kwargs):
     response = self.get_common().generate_data().generate(
       generate_data_config = {
-        "reset_cloud_share": {
+        "environment_tag": {
           "validation": lambda item: self.get_common().helper_type().bool().is_bool(check_value= item),
           "messages":{
             "validation": f"Valid options for Yes are: {self.get_common().helper_type().bool().is_true_values()}",
@@ -43,14 +46,106 @@ class cloud_data_client_general_config_step_2(base):
       }
     )
     if response is None:
-      next_step.step(cloud_share= self.get_cloud_share_config_value(config_key= "type"))
+      return
 
-    if self.get_common().helper_type().bool().is_true(check_value= response.get("reset_cloud_share").get("formated")):
-      self.reset_config_cloud_share()
+    if self.get_common().helper_type().bool().is_true(check_value= response.get("environment_tag").get("formated")):
+      self.step_tag() 
     
-    next_step.step(cloud_share= self.get_cloud_share_config_value(config_key= "type"))
     return
+  
+  def step_tag(self, *args, **kwargs):
+    response = self.get_common().generate_data().generate(
+      generate_data_config = {
+        "tag": {
+          "validation": lambda item: not self.get_common().helper_type().string().is_null_or_whitespace(string_value= item),
+          "messages":{
+            "validation": f"The value cannot be empty",
+          },
+          "conversion": lambda item: self.get_common().helper_type().string().trim(string_value= item),
+          "desc": f"What is the main tag to determin the environment?",
+          "default": None,
+          "handler": generate_data_handlers.get_handler(handler= "base"),
+          "optional": False
+        },        
+        "tag_insensitive": {
+          "validation": lambda item: self.get_common().helper_type().bool().is_bool(check_value= item),
+          "messages":{
+            "validation": f"Valid options for Yes are: {self.get_common().helper_type().bool().is_true_values()}",
+          },
+          "conversion": lambda item: self.get_common().helper_type().bool().is_true(check_value= item),
+          "desc": f"Treat the tags as case insensitive.\nIE EnvIronmeNt and environment would be the same.\nValid Options: {self.get_common().helper_type().bool().is_true_values()}",
+          "default": True,
+          "handler": generate_data_handlers.get_handler(handler= "base"),
+          "optional": True
+        }
+      }
+    )
+    if response is None:
+      print("-----------------------------")
+      print()
+      print()
+      print("Base Environment Tag NOT updated/Configured")
+      print()
+      print()
+      print("-----------------------------")
+      return
+    for key, item in response.items():
+      self._update_config_environment_data(config_key= key, config_value= item.get("formated"))
+    self._save_config()
 
+    print("-----------------------------")
+    print()
+    print()
+    print("Base Environment Tag updated/configured")
+    print()
+    print()
+    print("-----------------------------")
     
+    self.step_add_alttag()
+  
+  def step_add_alttag(self, *args, **kwargs):
+    
+    stop_alt_tag = False
+    alt_tags_add = []
+    while not stop_alt_tag:
+      response = self.get_common().generate_data().generate(
+        generate_data_config = {
+          "environment_tag": {
+            "validation": lambda item: not self.get_common().helper_type().string().is_null_or_whitespace(string_value= item),
+            "messages":{
+              "validation": f"The value cannot be empty",
+            },
+            "conversion": lambda item: self.get_common().helper_type().string().trim(string_value= item),
+            "desc": f"What is the alt tag?\n(leave empty to end or type quit or exit)",
+            "default": None,
+            "handler": generate_data_handlers.get_handler(handler= "base"),
+            "optional": False
+          }
+        }
+      )
+
+      if response is None:
+        stop_alt_tag = True
+        break
+
+      if response.get("environment_tag") is None:
+        stop_alt_tag = True
+        break
+
+      if self.get_common().helper_type().string().is_null_or_whitespace(string_value= response.get("environment_tag").get("formated")):      
+        stop_alt_tag = True
+        break
+    
+      alt_tags_add.append(response.get("environment_tag").get("formated"))
+
+    alt_tags_add = self.get_common().helper_type().list().unique_list(
+      data= alt_tags_add,
+      case_sensitive= not self.get_environment_data_config_value(
+        config_key= "tag_insensitive",
+        default_if_none= True
+      )
+    )
+    self._update_config_environment_data(config_key= "alt_tags", config_value= alt_tags_add)
+    self._save_config()
     
   

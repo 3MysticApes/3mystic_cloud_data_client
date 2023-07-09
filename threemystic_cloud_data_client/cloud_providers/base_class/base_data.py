@@ -89,8 +89,10 @@ class cloud_data_client_provider_base_data(base):
       {
         "extra_account": self.get_common().helper_type().dictionary().merge_dictionary([
           {},
-          {"extra_environment": await self._get_environment(account= account),
-           "extra_tags": self.get_cloud_client().get_resource_tags_as_dictionary(resource= account)}
+          {
+            "extra_environment": await self._get_environment(account= account),
+           "extra_tags": self.get_cloud_client().get_resource_tags_as_dictionary(resource= account)
+          },
           self.get_cloud_client().serialize_resource(resource= account),
         ]),
         "extra_region": (
