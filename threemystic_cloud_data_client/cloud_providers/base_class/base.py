@@ -95,7 +95,7 @@ class cloud_data_client_provider_base(base):
 
   def reset_config_environment_data(self, *args, **kwargs):    
     self.get_config()["environment"] = {}
-    self._save_config()
+    self._save_config_environment_data()
 
   def has_tag_data_config(self, refresh = False, *args, **kwargs):
     
@@ -109,7 +109,7 @@ class cloud_data_client_provider_base(base):
       return self.get_config().get("environment")
     
     self.get_config()["environment"] = {}
-    self._save_config()
+    self._save_config_environment_data()
      
     return self.get_config_environment_data(*args, **kwargs)
 
