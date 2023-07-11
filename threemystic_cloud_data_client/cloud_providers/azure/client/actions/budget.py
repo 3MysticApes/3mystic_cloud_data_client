@@ -84,7 +84,7 @@ class cloud_data_client_azure_client_action(base):
       'time_period': ForecastTimePeriod(
         from_property= self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_common().helper_type().datetime().datetime_as_string(dt_format='%Y-%m-%d', dt= self.get_data_start())}T00:00:00+00:00"),
         to=  self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_common().helper_type().datetime().datetime_as_string(dt_format='%Y-%m-%d', dt= fiscal_year_end)}T23:59:59+00:00")  
-      ),      
+      ),   
       'dataset': {
         'granularity': GranularityType.DAILY,
         'aggregation': {
@@ -106,7 +106,7 @@ class cloud_data_client_azure_client_action(base):
       if usage is None:
         return usage
 
-      return await self.__process_get_cost_data_daily_data(usage= usage)
+      return await self.__process_get_cost_data_daily_data(usage= usage, is_forcast= True)
     except Exception as err:
       self.get_common().get_logger().exception(msg= f"{self.get_cloud_client().get_account_id(account= account)} - {str(err)}", extra={"exception": err})
       return None
@@ -143,13 +143,13 @@ class cloud_data_client_azure_client_action(base):
       if usage is None:
         return {}
 
-      return await self.__process_get_cost_data_daily_data(usage= usage)
+      return await self.__process_get_cost_data_daily_data(usage= usage, is_forcast= False)
     except Exception as err:
       print(err)
       self.get_common().get_logger().exception(msg= f"{self.get_cloud_client().get_account_id(account= account)} - {str(err)}", extra={"exception": err})
       return None
   
-  async def __process_get_cost_data_daily_data(self, usage, *args, **kwargs):
+  async def __process_get_cost_data_daily_data(self, usage, is_forcast = False, *args, **kwargs):
     by_month = { }
 
     column_indexs = {
@@ -159,6 +159,7 @@ class cloud_data_client_azure_client_action(base):
     column_indexs["usagedate"] = -1
     column_indexs["currency"] = -1
 
+    total_key = "total" if not is_forcast else "forcast_total"
     for index, data in enumerate(usage.columns[0]):
       if column_indexs.get(self.get_common().helper_type().string().set_case(string_value= data.get("name") , case= "lower")) is None:
         continue
@@ -173,34 +174,56 @@ class cloud_data_client_azure_client_action(base):
           "currency": cost_data[column_indexs["currency"]],
           "totals":{
             "total": Decimal(0),
-            "resource_group": {},
-            "resource_type": {}
+            "forcast_total": Decimal(0),
+            "resource_group": {
+              "total":{},
+              "forcast_total":{},
+            },
+            "resource_type": {
+              "total":{},
+              "forcast_total":{},
+            }
           },
           "days":{}
         }
       
-      if by_month[by_month_key]["totals"]["resource_group"].get(cost_data[column_indexs["ResourceGroup"]]) is None:
-        by_month[by_month_key]["totals"]["resource_group"][cost_data[column_indexs["ResourceGroup"]]] = Decimal(0)
+      if by_month[by_month_key]["totals"]["resource_group"][total_key].get(cost_data[column_indexs["ResourceGroup"]]) is None:
+        by_month[by_month_key]["totals"]["resource_group"][total_key][cost_data[column_indexs["ResourceGroup"]]] = Decimal(0)
       
-      if by_month[by_month_key]["totals"]["resource_type"].get(cost_data[column_indexs["ResourceType"]]) is None:
-        by_month[by_month_key]["totals"]["resource_type"][cost_data[column_indexs["ResourceType"]]] = Decimal(0)
+      if by_month[by_month_key]["totals"]["resource_type"][total_key].get(cost_data[column_indexs["ResourceType"]]) is None:
+        by_month[by_month_key]["totals"]["resource_type"][total_key][cost_data[column_indexs["ResourceType"]]] = Decimal(0)
       
       if by_month[by_month_key]["days"].get(day_key) is None:
         by_month[by_month_key]["days"][day_key] = {
           "date": data_dt,
           "total": Decimal(0),
-          "resource_group": {},
-          "resource_type": {}
+          "forcast_total": Decimal(0),
+          "resource_group": {
+            "total":{},
+            "forcast_total":{},
+          },
+          "resource_type": {
+            "total":{},
+            "forcast_total":{},
+          }
         }
-
-      by_month[by_month_key]["totals"]["total"] += Decimal(cost_data[column_indexs["cost"]])
-      by_month[by_month_key]["totals"]["resource_group"][cost_data[column_indexs["ResourceGroup"]]] += Decimal(cost_data[column_indexs["cost"]])
-      by_month[by_month_key]["totals"]["resource_type"][cost_data[column_indexs["ResourceType"]]] += Decimal(cost_data[column_indexs["cost"]])
+      
+      if by_month[by_month_key]["days"][day_key]["resource_group"][total_key].get(cost_data[column_indexs["ResourceGroup"]]) is None:
+        by_month[by_month_key]["days"][day_key]["resource_group"][total_key][cost_data[column_indexs["ResourceGroup"]]] = Decimal(0)
+      
+      if by_month[by_month_key]["days"][day_key]["resource_type"][total_key].get(cost_data[column_indexs["ResourceType"]]) is None:
+        by_month[by_month_key]["days"][day_key]["resource_type"][total_key][cost_data[column_indexs["ResourceType"]]] = Decimal(0)
 
       
-      by_month[by_month_key]["days"][day_key]["total"] += Decimal(cost_data[column_indexs["cost"]])
-      by_month[by_month_key]["days"][day_key]["resource_group"][cost_data[column_indexs["ResourceGroup"]]] += Decimal(cost_data[column_indexs["cost"]])
-      by_month[by_month_key]["days"][day_key]["resource_type"][cost_data[column_indexs["ResourceType"]]] += Decimal(cost_data[column_indexs["cost"]])
+
+      by_month[by_month_key]["totals"][total_key] += Decimal(cost_data[column_indexs["cost"]])
+      by_month[by_month_key]["totals"]["resource_group"][total_key][cost_data[column_indexs["ResourceGroup"]]] += Decimal(cost_data[column_indexs["cost"]])
+      by_month[by_month_key]["totals"]["resource_type"][total_key][cost_data[column_indexs["ResourceType"]]] += Decimal(cost_data[column_indexs["cost"]])
+
+      
+      by_month[by_month_key]["days"][day_key][total_key] += Decimal(cost_data[column_indexs["cost"]])
+      by_month[by_month_key]["days"][day_key]["resource_group"][total_key][cost_data[column_indexs["ResourceGroup"]]] += Decimal(cost_data[column_indexs["cost"]])
+      by_month[by_month_key]["days"][day_key]["resource_type"][total_key][cost_data[column_indexs["ResourceType"]]] += Decimal(cost_data[column_indexs["cost"]])
       
     
     return by_month
@@ -224,7 +247,17 @@ class cloud_data_client_azure_client_action(base):
 
     processed_last_year_data = await self.__process_get_cost_data_last_year(fiscal_start= fiscal_year_start_date, *args, **kwargs )
     processed_year_forecast = await self.__process_get_cost_data_forcast_year(fiscal_year_start= fiscal_year_start_date, *args, **kwargs )
+    
+    while len(processed_year_forecast.keys()) > 0:
+      month_key = processed_year_forecast.keys()[0]
+      month_data = processed_year_forecast.pop(month_key)
+      if processed_last_year_data.get(month_key) is None:
+        processed_last_year_data[month_key] = month_data
+        continue
+      # The though is with this data I can now go through the month data and the merge so its more just Totals.
+      # I can add
 
+      
 
     return {}
     
