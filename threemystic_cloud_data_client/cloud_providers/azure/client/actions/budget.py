@@ -12,27 +12,33 @@ class cloud_data_client_azure_client_action(base):
       logger_name= "cloud_data_client_azure_client_action_budget", 
       uniqueid_lambda = lambda: True,
       *args, **kwargs)
+    
+    self._cost_dimension = ["SubscriptionId", "ResourceGroup", "ResourceType"]
   
   def __process_get_cost_generate_data(self, account, client, cost_filter, is_forcast = False, *args, **kwargs):
     if not is_forcast:
-      return client.query.usage(
-            scope= f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
-            parameters= QueryDefinition(**cost_filter)
-          )
+      return self.get_cloud_client().sdk_request(
+        tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+        lambda_sdk_command=lambda: client.query.usage(
+          scope= f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
+          parameters= QueryDefinition(**cost_filter)
+        )
+      )
 
-    return client.forecast.usage(
-      scope= f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
-      parameters= ForecastDefinition(**cost_filter)
-    )   
+    return self.get_cloud_client().sdk_request(
+        tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+        lambda_sdk_command=lambda: client.forecast.usage(
+          scope= f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
+          parameters= ForecastDefinition(**cost_filter)
+        )
+      )
    
   async def __process_get_cost_generate_total(self, account, client, cost_filter, is_forcast = False, *args, **kwargs):
     account_total = Decimal(0)
     try:
-      account_usage = self.get_cloud_client().sdk_request(
-        tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-        lambda_sdk_command=lambda: self.__process_get_cost_generate_data(account= account, client= client, cost_filter= cost_filter, is_forcast= is_forcast)  
-      )
-
+      account_usage = self.__process_get_cost_generate_data(account= account, client= client, cost_filter= cost_filter, is_forcast= is_forcast)
+      print(account_usage.serialize())
+      
       for row in account_usage.rows:
         account_total += Decimal(row[0])
       
@@ -42,22 +48,17 @@ class cloud_data_client_azure_client_action(base):
       return None
       
   
-  async def __process_get_cost_data_last_month(self, total_by_month, *args, **kwargs):
-    last_month_year = self.get_data_start().year
-    last_month_month = self.get_data_start().month - 1
-    if last_month_month < 1:
-      last_month_month = 12
-      last_month_year -= 1
-    
-    if total_by_month is not None and total_by_month.get(f'{last_month_month}') is not None:
-      return total_by_month.get(f'{last_month_month}')
+  async def __process_get_cost_data_last_month(self, total_by_month, *args, **kwargs):    
+    last_month = (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(months= 1))
+    if total_by_month is not None and total_by_month.get(f'{last_month.month}') is not None:
+      return total_by_month.get(f'{last_month.month}')
     
     cost_filter = {
       'type': ExportType.AMORTIZED_COST,
       'timeframe': TimeframeType.CUSTOM,
       'time_period': QueryTimePeriod(
-        from_property= self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{last_month_year}-{self.get_common().helper_type().datetime().get_month_as_2digits(month= last_month_month)}-01T00:00:00+00:00"),
-        to=  self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{last_month_year}-{self.get_common().helper_type().datetime().get_month_as_2digits(month=last_month_month)}-{self.get_common().helper_type().datetime().get_day_as_2digits(day=self.get_common().helper_type().datetime().last_day_month_day(month= last_month_month))}T23:59:59+00:00")      
+        from_property= self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_common().helper_type().datetime().datetime_as_string(dt_format='%Y-%m', dt= last_month)}-01T00:00:00+00:00"),
+        to=  self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_common().helper_type().datetime().datetime_as_string(dt_format='%Y-%m', dt= last_month)}-{self.get_common().helper_type().datetime().get_day_as_2digits(day=self.get_common().helper_type().datetime().last_day_month_day(month= last_month.month))}T23:59:59+00:00")      
       ),      
       'dataset': {
         'aggregation': {
@@ -66,28 +67,23 @@ class cloud_data_client_azure_client_action(base):
             'function': 'Sum'
           }
         },
-        'grouping': [
-          {
-            'type': 'Dimension',
-            'name': 'SubscriptionId'
-          }
+        'grouping': [ 
+          {"type": "Dimension", "name": dimension} for dimension in self._cost_dimension
         ]
       }
     }
     return await self.__process_get_cost_generate_total(cost_filter= cost_filter, *args, **kwargs)
   
   async def __process_get_cost_data_forcast_year(self, account, fiscal_year_start, *args, **kwargs):
-    fiscal_year_end = self.get_common().helper_type().datetime().yesterday(dt= fiscal_year_start)
-    fiscal_year_end = self.get_common().helper_type().datetime().datetime_from_string(
-      dt_string= f"{fiscal_year_end.year+1}/{self.get_common().helper_type().datetime().get_month_as_2digits(month=fiscal_year_end.month)}/{self.get_common().helper_type().datetime().get_day_as_2digits(day=fiscal_year_end.day)}",
-      dt_format= "%Y/%m/%d"
-    )
+    fiscal_year_end = (self.get_common().helper_type().datetime().yesterday(dt= fiscal_year_start) 
+                       + self.get_common().helper_type().datetime().time_delta(years= 1, months= 1))
+    
     cost_filter = {
       'type': ForecastType.AMORTIZED_COST,
       'timeframe': ForecastTimeframe.CUSTOM,
       'time_period': ForecastTimePeriod(
-        from_property= self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_data_start().year}-{self.get_common().helper_type().datetime().get_month_as_2digits(month=self.get_data_start().month)}-01T00:00:00+00:00"),
-        to=  self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{fiscal_year_end.year}-{self.get_common().helper_type().datetime().get_month_as_2digits(month=fiscal_year_end.month)}-{self.get_common().helper_type().datetime().get_day_as_2digits(day=fiscal_year_end.day)}T23:59:59+00:00")      
+        from_property= self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_common().helper_type().datetime().datetime_as_string(dt_format='%Y-%m-%d', dt= self.get_data_start())}T00:00:00+00:00"),
+        to=  self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_common().helper_type().datetime().datetime_as_string(dt_format='%Y-%m-%d', dt= fiscal_year_end)}T23:59:59+00:00")  
       ),      
       'dataset': {
         'granularity': GranularityType.DAILY,
@@ -97,20 +93,16 @@ class cloud_data_client_azure_client_action(base):
             'function': 'Sum'
           }
         },
-        'grouping': [
-          {
-            'type': 'Dimension',
-            'name': 'SubscriptionId'
-          }
+        'grouping': [ 
+          {"type": "Dimension", "name": dimension} for dimension in self._cost_dimension
         ]
       }
     }
 
     try:
-      usage = self.get_cloud_client().sdk_request(
-        tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-        lambda_sdk_command=lambda: self.__process_get_cost_generate_data(account= account, cost_filter= cost_filter, is_forcast= True, *args, **kwargs)  
-      )
+      usage = self.__process_get_cost_generate_data(account= account, cost_filter= cost_filter, is_forcast= True, *args, **kwargs)
+      print(usage.serialize())
+
       if usage is None:
         return usage
 
@@ -119,22 +111,18 @@ class cloud_data_client_azure_client_action(base):
       self.get_common().get_logger().exception(msg= f"{self.get_cloud_client().get_account_id(account= account)} - {str(err)}", extra={"exception": err})
       return None
     
-  async def __process_get_cost_data_ytd(self, account, fiscal_year_start, *args, **kwargs):
+  async def __process_get_cost_data_last_year(self, account, *args, **kwargs):
     yesterday = self.get_common().helper_type().datetime().yesterday()
-    if yesterday.month != self.get_data_start().month:
-      return None
-    if yesterday < fiscal_year_start:
-      fiscal_year_start = self.get_common().helper_type().datetime().datetime_from_string(
-        dt_string= f"{self.get_data_start().year-1}/{fiscal_year_start}",
-        dt_format= "%Y/%m/%d"
-      )
+    
+    last_year = (self.get_common().helper_type().datetime().get()
+                 + self.get_common().helper_type().datetime().time_delta(years= -1))
       
     cost_filter = {
       'type': ExportType.AMORTIZED_COST,
       'timeframe': TimeframeType.CUSTOM,
       'time_period': QueryTimePeriod(
-        from_property= self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_data_start().year}-{self.get_common().helper_type().datetime().get_month_as_2digits(month= fiscal_year_start.month)}-{self.get_common().helper_type().datetime().get_day_as_2digits(day= fiscal_year_start.day)}T00:00:00+00:00"),
-        to=  self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_data_start().year}-{self.get_common().helper_type().datetime().get_month_as_2digits(month= yesterday.month)}-{self.get_common().helper_type().datetime().get_day_as_2digits(day= yesterday.day)}T23:59:59+00:00")      
+        from_property= self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_common().helper_type().datetime().datetime_as_string(dt_format='%Y-%m-%d', dt= last_year)}T00:00:00+00:00"),
+        to=  self.get_common().helper_type().datetime().parse_iso(iso_datetime_str= f"{self.get_common().helper_type().datetime().datetime_as_string(dt_format='%Y-%m-%d', dt= yesterday)}T23:59:59+00:00")    
       ),
       'dataset': {
         'granularity': GranularityType.DAILY,
@@ -144,19 +132,13 @@ class cloud_data_client_azure_client_action(base):
             'function': 'Sum'
           }
         },
-        'grouping': [
-          {
-            'type': 'Dimension',
-            'name': 'SubscriptionId'
-          }
+        'grouping': [ 
+          {"type": "Dimension", "name": dimension} for dimension in self._cost_dimension
         ]
       }
     }
     try:
-      usage = self.get_cloud_client().sdk_request(
-        tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-        lambda_sdk_command=lambda: self.__process_get_cost_generate_data(account= account, cost_filter= cost_filter, is_forcast= False, *args, **kwargs)  
-      )
+      usage = self.__process_get_cost_generate_data(account= account, cost_filter= cost_filter, is_forcast= False, *args, **kwargs)
 
       if usage is None:
         return {}
@@ -168,39 +150,60 @@ class cloud_data_client_azure_client_action(base):
       return None
   
   async def __process_get_cost_data_daily_data(self, usage, *args, **kwargs):
-    total = Decimal(0)
-    by_month = { f"{month}":None for month in range(1, 13)}
-    by_day = { }
-    max_date = 0
-    for cost_data in usage.rows:
-      month = f'{self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(cost_data[1]), dt_format= "%Y%m%d").month}'
-      if by_month.get(month) is None:
-        by_month[month] = 0
-      by_month[month] += Decimal(cost_data[0])
-      total += Decimal(cost_data[0])
-      by_day[str(cost_data[1])] = Decimal(cost_data[0])
-      if cost_data[1] > max_date:
-        max_date = cost_data[1]
-    
-    last_seven_day_total = Decimal(0)
-    seven_days_ago = (
-      self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(max_date), dt_format= "%Y%m%d") +
-      self.get_common().helper_type().datetime().time_delta(
-        days= -6)
-    )
-    for day in range(0,7):
-      date_string = self.get_common().helper_type().datetime().datetime_as_string(
-        dt= (seven_days_ago + self.get_common().helper_type().datetime().time_delta(days= day)),
-        dt_format= "%Y%m%d"
-      )
-      if by_day.get(date_string) is not None:
-        last_seven_day_total += by_day.get(date_string)
+    by_month = { }
 
-    return {
-      "total": total.quantize(Decimal('.0000'), ROUND_HALF_UP),
-      "by_month": {month:value.quantize(Decimal('.0000'), ROUND_HALF_UP) for month, value in by_month.items() if value is not None},
-      "last_seven_days": last_seven_day_total.quantize(Decimal('.0000'), ROUND_HALF_UP),
+    column_indexs = {
+      self.get_common().helper_type().string().set_case(string_value= dimension, case= "lower"):-1 for dimension in self._cost_dimension
     }
+    column_indexs["cost"] = -1
+    column_indexs["usagedate"] = -1
+    column_indexs["currency"] = -1
+
+    for index, data in enumerate(usage.columns[0]):
+      if column_indexs.get(self.get_common().helper_type().string().set_case(string_value= data.get("name") , case= "lower")) is None:
+        continue
+      column_indexs[self.get_common().helper_type().string().set_case(string_value= data.get("name") , case= "lower")] = index
+
+    for cost_data in usage.rows:
+      data_dt = self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(column_indexs["usagedate"]), dt_format= "%Y%m%d")
+      by_month_key = self.get_common().helper_type().datetime().datetime_as_string(dt_format= "%Y%m", dt= data_dt)
+      day_key = self.get_common().helper_type().datetime().get_from_timestamp(dt= data_dt)
+      if by_month.get(by_month_key) is None:
+        by_month[by_month_key] = {
+          "currency": cost_data[column_indexs["currency"]],
+          "totals":{
+            "total": Decimal(0),
+            "resource_group": {},
+            "resource_type": {}
+          },
+          "days":{}
+        }
+      
+      if by_month[by_month_key]["totals"]["resource_group"].get(cost_data[column_indexs["ResourceGroup"]]) is None:
+        by_month[by_month_key]["totals"]["resource_group"][cost_data[column_indexs["ResourceGroup"]]] = Decimal(0)
+      
+      if by_month[by_month_key]["totals"]["resource_type"].get(cost_data[column_indexs["ResourceType"]]) is None:
+        by_month[by_month_key]["totals"]["resource_type"][cost_data[column_indexs["ResourceType"]]] = Decimal(0)
+      
+      if by_month[by_month_key]["days"].get(day_key) is None:
+        by_month[by_month_key]["days"][day_key] = {
+          "date": data_dt,
+          "total": Decimal(0),
+          "resource_group": {},
+          "resource_type": {}
+        }
+
+      by_month[by_month_key]["totals"]["total"] += Decimal(cost_data[column_indexs["cost"]])
+      by_month[by_month_key]["totals"]["resource_group"][cost_data[column_indexs["ResourceGroup"]]] += Decimal(cost_data[column_indexs["cost"]])
+      by_month[by_month_key]["totals"]["resource_type"][cost_data[column_indexs["ResourceType"]]] += Decimal(cost_data[column_indexs["cost"]])
+
+      
+      by_month[by_month_key]["days"][day_key]["total"] += Decimal(cost_data[column_indexs["cost"]])
+      by_month[by_month_key]["days"][day_key]["resource_group"][cost_data[column_indexs["ResourceGroup"]]] += Decimal(cost_data[column_indexs["cost"]])
+      by_month[by_month_key]["days"][day_key]["resource_type"][cost_data[column_indexs["ResourceType"]]] += Decimal(cost_data[column_indexs["cost"]])
+      
+    
+    return by_month
 
   def __process_get_cost_calculate_forecast_total(self, current_total, forecast_total, *args, **kwargs):
     if current_total is None and forecast_total is None:
@@ -213,9 +216,18 @@ class cloud_data_client_azure_client_action(base):
       dt_string= f"{self.get_data_start().year}/{fiscal_year_start}",
       dt_format= "%Y/%m/%d"
     )
+    
+    if fiscal_year_start_date > self.get_data_start():
+      fiscal_year_start_date = fiscal_year_start_date + self.get_common().helper_type().datetime().time_delta(years= -1)
 
-    processed_ytd_data = await self.__process_get_cost_data_ytd(fiscal_year_start= fiscal_year_start_date, *args, **kwargs )
+    
+
+    processed_last_year_data = await self.__process_get_cost_data_last_year(fiscal_start= fiscal_year_start_date, *args, **kwargs )
     processed_year_forecast = await self.__process_get_cost_data_forcast_year(fiscal_year_start= fiscal_year_start_date, *args, **kwargs )
+
+
+    return {}
+    
 
     if processed_ytd_data is None and processed_year_forecast is None:
       return {
@@ -261,6 +273,26 @@ class cloud_data_client_azure_client_action(base):
       key:value for key,value in (await self.__process_get_cost_data(account= account, client= costmanagement_client, loop= loop, *args, **kwargs)).items()
     }
 
+    # Update this to return all days for the last year.
+    # break the subscription up into resource groups.
+    # ie:
+    #{
+    #   "Last7Days":...,
+    #   "MonthToDate": ...,
+    #   "MonthTotalForcast": ...,
+    # 	"YearToDate": ...,
+    # 	"YearTotalForcast": ...,
+    #   "raw_data": {
+    #     # This is done so if I wanted to have another group like resource type I could.
+    #     "resource_group": [
+    #       {
+    #         "date": ..,
+    #         "group_name": ...
+    #         "amount": ...,
+    #       }
+    #     ]
+    #   }
+    # }
     return {
       "account": account,
       "data": [ self.get_common().helper_type().dictionary().merge_dictionary([

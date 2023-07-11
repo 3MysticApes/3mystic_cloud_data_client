@@ -226,7 +226,8 @@ class cloud_data_client_azure_client_action(base):
     mysql_client = MySQLManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     mariadb_client = MariaDBManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     postgres_client = PostgreSQLManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
-    
+    for test in sql_client.servers.list( ):
+      test.ta
     tasks = {
        "cosmosdb_client": loop.create_task(self.__process_get_db_cosmosdb(client= cosmosdb_client,account= account)),
        "sql_client": loop.create_task(self.__process_get_db_sql(client= sql_client,account= account)),

@@ -68,17 +68,17 @@ class cloud_data_client_provider_base_data(base):
     pass
 
   async def _get_environment(self, account = None, resource = None, *args, **kwargs):
-    resource_name = self.get_cloud_client().get_resource_name(resource= resource)
-    account_name = self.get_cloud_client().get_account_name(account= account)
-
+    resource_name = self.get_common().helper_type().string().set_case(string_value= self.get_cloud_client().get_resource_name(resource= resource), case= "lower")
+    account_name = self.get_common().helper_type().string().set_case(string_value= self.get_cloud_client().get_account_name(account= account), case= "lower")
+    
     if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= resource_name):
       for name in self.get_cloud_data_client().get_nonprod_names():
         if name in resource_name:
-          return "nonprod"
+          return name
     
     for name in self.get_cloud_data_client().get_nonprod_names():
       if name in account_name:
-        return "nonprod"
+        return name
       
     return "prod"
   
