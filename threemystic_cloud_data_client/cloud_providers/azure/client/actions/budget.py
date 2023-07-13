@@ -431,12 +431,6 @@ class cloud_data_client_azure_client_action(base):
 
   async def _process_account_data(self, account, loop, *args, **kwargs):
     
-    if self.get_cloud_client().get_account_id(account= account) != "5c49443f-ce4b-470d-8ba8-c9571c1de06d":
-      return {
-        "account": account,
-        "data": [ ]
-      }
-    
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value= kwargs.get("fiscal_year_start")):
       kwargs["fiscal_year_start"] = self.get_cloud_data_client().get_default_fiscal_year_start()
     
