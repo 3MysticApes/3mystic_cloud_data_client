@@ -244,14 +244,9 @@ class cloud_data_client_azure_client_action(base):
 
     return by_month
 
-  def __process_get_cost_calculate_forecast_total(self, current_total, forecast_total, *args, **kwargs):
-    if current_total is None and forecast_total is None:
-      return None
-    
-    return forecast_total if current_total is None else current_total
-
   async def __process_get_cost_data_sum_year_forcast_data(self, year_month_data, forcast_month_data, *args, **kwargs):
     key_list = self.get_common().helper_type().list().unique_list(data= list(year_month_data.keys()) + list(forcast_month_data.keys()))
+
     for key in key_list:
       year_month_key_data = year_month_data.get(key)
       forcast_month_key_data = forcast_month_data.get(key)
@@ -263,25 +258,24 @@ class cloud_data_client_azure_client_action(base):
           forcast_month_data= forcast_month_key_data
         )
       
-      if self.get_common().helper_type().general().is_type(obj=year_month_key_data, type_check= Decimal) and forcast_month_key_data is None:
+      if self.get_common().helper_type().general().is_numeric(year_month_key_data) and forcast_month_key_data is None:
         forcast_month_key_data = Decimal(0)
       
-      if self.get_common().helper_type().general().is_type(obj=forcast_month_key_data, type_check= Decimal) and year_month_key_data is None:
+      if self.get_common().helper_type().general().is_numeric(year_month_key_data) and year_month_key_data is None:
         year_month_key_data = Decimal(0)
-
-      year_month_key_data += forcast_month_key_data
-      if year_month_data.get(key) is None:
-        year_month_data[key] = year_month_key_data
+      
+      year_month_data[key] = (year_month_key_data + forcast_month_key_data)
+        
       
 
-  async def __process_get_cost_data_process_year_data_range_data(self, year_data, processed_time_rang_data, *args, **kwargs):
+  async def __process_get_cost_data_process_year_data_range_data(self, year_data, processed_time_range_data, *args, **kwargs):
     
-    while len(processed_time_rang_data.keys()) > 0:
-        month_key, month_data = processed_time_rang_data.popitem()
+    while len(processed_time_range_data.keys()) > 0:
+        month_key, month_data = processed_time_range_data.popitem()
         if year_data.get(month_key) is None:
           year_data[month_key] = month_data
           continue
-
+        
         await self.__process_get_cost_data_sum_year_forcast_data(
           year_month_data= year_data[month_key],
           forcast_month_data= month_data
@@ -292,7 +286,7 @@ class cloud_data_client_azure_client_action(base):
      while start_date < end_date:
       await self.__process_get_cost_data_process_year_data_range_data(
         year_data= year_data,
-        processed_time_rang_data= await self.__process_get_cost_data_forcast_time_range(
+        processed_time_range_data= await self.__process_get_cost_data_forcast_time_range(
           start_date= start_date,
           end_date= self.get_common().helper_type().datetime().yesterday(dt=(start_date + self.get_common().helper_type().datetime().time_delta(months= 3, dt= start_date))),
           fiscal_start= fiscal_start, fiscal_end= fiscal_end, 
@@ -308,7 +302,7 @@ class cloud_data_client_azure_client_action(base):
       
       await self.__process_get_cost_data_process_year_data_range_data(
         year_data= year_data,
-        processed_time_rang_data= await self.__process_get_cost_data_time_range(
+        processed_time_range_data= await self.__process_get_cost_data_time_range(
           start_date= start_date,
           end_date= self.get_common().helper_type().datetime().yesterday(dt=(start_date + self.get_common().helper_type().datetime().time_delta(months= 3, dt= start_date))),
           fiscal_start= fiscal_start, fiscal_end= fiscal_end, 
@@ -381,7 +375,7 @@ class cloud_data_client_azure_client_action(base):
     last14_days = {}
     await self.__process_get_cost_data_process_year_data_range_data(
       year_data= last14_days,
-      processed_time_rang_data= await self.__process_get_cost_data_time_range(
+      processed_time_range_data= await self.__process_get_cost_data_time_range(
         start_date= (self.get_data_start() + self.get_common().helper_type().datetime().time_delta(days= -14)),
         end_date= self.get_data_start(),
         fiscal_start= fiscal_year_start_date, fiscal_end= fiscal_year_start_date, 
