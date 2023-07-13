@@ -138,6 +138,8 @@ class cloud_data_client_azure_client_action(base):
       if by_month.get(by_month_key) is None:
         by_month[by_month_key] = {
           "currency": self.get_common().helper_type().string().set_case(self.get_cloud_data_client().get_default_currency(), case= "upper"),
+          "month": data_dt.month,
+          "year": data_dt.year,
           "totals":{
             "total": Decimal(0),
             "fiscal_total": Decimal(0),
@@ -366,6 +368,8 @@ class cloud_data_client_azure_client_action(base):
       dt_format= "%Y%m"
     )
     return_data = {
+      "year_to_date": Decimal(0),  
+      "year_forecast": Decimal(0),
       "fiscal_year_to_date": Decimal(0),  
       "fiscal_year_forecast": Decimal(0),
       "month_to_date": Decimal(0),  
@@ -410,6 +414,10 @@ class cloud_data_client_azure_client_action(base):
     for data in year_data.values():
       return_data["fiscal_year_to_date"] += data["totals"].get("fiscal_total")
       return_data["fiscal_year_forecast"] += (data["totals"].get("fiscal_total") + data["totals"].get("fiscal_forcast_total"))
+      if data["year"] == self.get_data_start().year:
+        return_data["year_to_date"] += data["totals"].get("total")
+        return_data["year_forecast"] += (data["totals"].get("total") + data["totals"].get("forcast_total"))
+
     
     if year_data.get(month_key) is not None:
       return_data["month_to_date"] = year_data[month_key]["totals"]["total"]
