@@ -161,6 +161,12 @@ class cloud_data_client_provider_base(base):
     self.get_config(refresh= refresh)["fiscal_year_start"] = value
     self._save_config()
   
+  def get_default_currency(self, refresh = False, *args, **kwargs):
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value=self.get_config(refresh= refresh).get("currency")):
+      return "usd"
+    
+    return self.get_config(refresh= refresh).get("currency")
+    
   def get_default_fiscal_year_start(self, refresh = False, *args, **kwargs):
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value=self.get_config(refresh= refresh).get("fiscal_year_start")):
       return "01/01"

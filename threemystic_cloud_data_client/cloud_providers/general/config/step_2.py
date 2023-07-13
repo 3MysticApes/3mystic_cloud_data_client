@@ -149,7 +149,7 @@ class cloud_data_client_general_config_step_2(base):
     print()
     print("-----------------------------")
     
-    if len(self.get_environment_data_config_value("environment_tag", []])) < 1:
+    if len(self.get_environment_data_config_value("environment_tag", [])) < 1:
       return self.step_add_alttag()
     
     return self.step_tag_edit_new()
@@ -204,7 +204,7 @@ class cloud_data_client_general_config_step_2(base):
     print()
     if is_edit:
       print("Which tag do you want to edit?")
-    else
+    else:
       print("Which tag do you want to remove?")
     print()
     print("0: Exit")
@@ -219,10 +219,10 @@ class cloud_data_client_general_config_step_2(base):
         "alttag": {
           "validation": lambda item: not self.get_common().helper_type().string().is_null_or_whitespace(string_value= item) and self.get_common().helper_type().general().is_integer(item) and self.get_common().helper_type().int().get(item) >= 0 and self.get_common().helper_type().int().get(item) <= (len(drive_item_id_options[drive_item_position]) - 1),
           "messages":{
-            "validation": f"Valid options are: 0 - {len(self.get_environment_data_config_value("environment_tag", []))}",
+            "validation": f"Valid options are: 0 - {len(self.get_environment_data_config_value('environment_tag', []))}",
           },
           "conversion": lambda item: self.get_common().helper_type().int().get(item) if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= item) else None,
-          "desc": f"Please select the tenant to use \nValid Options: 0 -  {len(self.get_environment_data_config_value("environment_tag", []))}",
+          "desc": f"Please select the tenant to use \nValid Options: 0 -  {len(self.get_environment_data_config_value('environment_tag', []))}",
           "default": None,
           "handler": generate_data_handlers.get_handler(handler= "base"),
           "optional": True
@@ -249,8 +249,8 @@ class cloud_data_client_general_config_step_2(base):
     
     default_tag_value = None
     if edit_tag_index is not None:
-      if edit_tag_index >=0 and edit_tag_index <= len(self.get_environment_data_config_value("environment_tag", []))
-      default_tag_value = self.get_environment_data_config_value("environment_tag", [])[edit_tag_index]
+      if edit_tag_index >=0 and edit_tag_index <= len(self.get_environment_data_config_value("environment_tag", [])):
+        default_tag_value = self.get_environment_data_config_value("environment_tag", [])[edit_tag_index]
 
     response = self.get_common().generate_data().generate(
       generate_data_config = {

@@ -47,6 +47,17 @@ class cloud_data_client_general_config_step_1(base):
             "default": self.get_default_fiscal_year_start(),
             "handler": generate_data_handlers.get_handler(handler= "base"),
             "optional": not self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.get_default_fiscal_year_start())
+        },        
+        "currency": {
+            "validation": lambda item: not self.get_common().helper_type().string().is_null_or_whitespace(string_value= item),
+            "messages":{
+              "validation": f"Please provide a valid date in the following format mm/dd",
+            },
+            "conversion": lambda item: self.get_common().helper_type().string().trim(string_value= self.get_common().helper_type().string().set_case(string_value= item, case= "lower")),
+            "desc": f"What should currency be converted to?",
+            "default": self.get_default_currency(),
+            "handler": generate_data_handlers.get_handler(handler= "base"),
+            "optional": True
         }
       }
     )
