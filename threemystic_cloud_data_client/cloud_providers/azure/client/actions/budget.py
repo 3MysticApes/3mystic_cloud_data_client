@@ -402,7 +402,7 @@ class cloud_data_client_azure_client_action(base):
         day_count += 1
         return_data["last_seven_days"] += last14_days[month_key]["days"][day_key]["total"]
     
-    # return_data["last_14_days"] = last14_days
+    return_data["raw_last_14_days"] = last14_days
     
 
     
@@ -417,46 +417,8 @@ class cloud_data_client_azure_client_action(base):
     
     if year_data.get(last_month_key) is not None:
       return_data["last_month"] = year_data[last_month_key]["totals"]["total"]
-    
-    
 
 
-    print(return_data)
-
-
-    return {}
-    
-
-    if processed_ytd_data is None and processed_year_forecast is None:
-      return {
-      "fiscal_year_to_date": None,  
-      "fiscal_year_forecast": None,
-      "month_to_date": None,  
-      "month_forecast": None,
-      "last_seven_days": None,
-      "last_month": None,
-    }
-    return_data = {
-      "year_to_date": processed_ytd_data.get("total") if processed_ytd_data is not None else None,      
-      "year_forecast": self.__process_get_cost_calculate_forecast_total(
-        current_total= processed_ytd_data.get("total") if processed_ytd_data is not None else None,
-        forecast_total= processed_year_forecast.get("total") if processed_year_forecast is not None else None),
-      "month_to_date": processed_ytd_data.get("by_month").get(f'{self.get_data_start().month}') if processed_ytd_data is not None and processed_ytd_data.get("by_month") else None,      
-      "month_forecast": self.__process_get_cost_calculate_forecast_total(
-        current_total= processed_ytd_data.get("by_month").get(f'{self.get_data_start().month}') if processed_ytd_data is not None and processed_ytd_data.get("by_month") else None,
-        forecast_total= processed_year_forecast.get("by_month").get(f'{self.get_data_start().month}') if processed_year_forecast is not None and processed_year_forecast.get("by_month") else None),
-      "last_seven_days": processed_ytd_data.get("last_seven_days") if processed_ytd_data is not None else None,  
-    }
-    pending_tasks = {
-      "last_month": loop.create_task(self.__process_get_cost_data_last_month(
-      total_by_month= processed_ytd_data.get("by_month") if processed_ytd_data is not None else None, 
-      *args, **kwargs ))
-    }    
-
-    await asyncio.wait(pending_tasks.values())
-    for key, task in pending_tasks.items():
-      return_data[key] = task.result()
-  
     return return_data
 
   async def _process_account_data(self, account, loop, *args, **kwargs):
@@ -472,30 +434,6 @@ class cloud_data_client_azure_client_action(base):
     
     costmanagement_client = CostManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
   
-    cost_data = {
-      key:value for key,value in (await self.__process_get_cost_data(account= account, client= costmanagement_client, loop= loop, *args, **kwargs)).items()
-    }
-
-    # Update this to return all days for the last year.
-    # break the subscription up into resource groups.
-    # ie:
-    #{
-    #   "Last7Days":...,
-    #   "MonthToDate": ...,
-    #   "MonthTotalForcast": ...,
-    # 	"YearToDate": ...,
-    # 	"YearTotalForcast": ...,
-    #   "raw_data": {
-    #     # This is done so if I wanted to have another group like resource type I could.
-    #     "resource_group": [
-    #       {
-    #         "date": ..,
-    #         "group_name": ...
-    #         "amount": ...,
-    #       }
-    #     ]
-    #   }
-    # }
     return {
       "account": account,
       "data": [ self.get_common().helper_type().dictionary().merge_dictionary([
@@ -504,6 +442,6 @@ class cloud_data_client_azure_client_action(base):
           account= self.get_cloud_client().serialize_resource(resource= account),
           resource_id =  f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
         ),
-        cost_data
+        await self.__process_get_cost_data(account= account, client= costmanagement_client, loop= loop, *args, **kwargs)
       ])]
     }
