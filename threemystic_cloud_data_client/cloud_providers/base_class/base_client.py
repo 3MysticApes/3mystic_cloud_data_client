@@ -96,6 +96,13 @@ class cloud_data_client_provider_base_client(base):
         "help": "Data Action: This pulls the various non-inmemory databses",
         "action": 'store_const'
       },
+      "--vmimage": {
+        "default": None, 
+        "const": "vmimage",
+        "dest": "data_action",
+        "help": "Data Action: This pulls either Image Galleries or all the AMis",
+        "action": 'store_const'
+      },
     }
   
   def get_parser_args(self, *args, **kwargs):

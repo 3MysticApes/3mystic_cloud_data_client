@@ -4,7 +4,14 @@ from azure.mgmt.compute import ComputeManagementClient
 
 
 
-  
+class cloud_data_client_azure_client_action(base):
+  def __init__(self, *args, **kwargs):
+    super().__init__(
+      data_action="vmimage", 
+      logger_name= "cloud_data_client_azure_client_action_vmimage", 
+      uniqueid_lambda = lambda: True,
+      *args, **kwargs)
+      
   async def _process_account_data(self, account, loop, *args, **kwargs):
     client = ComputeManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     image_galleries = self.get_cloud_client().sdk_request(
