@@ -27,8 +27,8 @@ classifiers = [
 ]
 dependencies = [
   "colorama; platform_system == 'Windows'",
-  "threemystic-common >= 0.1.14",
-  "threemystic-cloud-client >= 0.1.32",
+  "threemystic-common >= 0.1.15",
+  "threemystic-cloud-client >= 0.1.34",
   "typing-extensions >= 4.4.0",
   "asyncio >= 3.4.3",
   "tqdm >= 4.65.0",
