@@ -91,7 +91,7 @@ class cloud_data_client_provider_base_data(base):
           {},
           {
             "extra_environment": await self._get_environment(account= account),
-           "extra_tags": self.get_cloud_client().get_resource_tags_as_dictionary(resource= account)
+            "extra_tags": self.get_cloud_client().get_resource_tags_as_dictionary(resource= account)
           },
           self.get_cloud_client().serialize_resource(resource= account),
         ]),
@@ -103,8 +103,7 @@ class cloud_data_client_provider_base_data(base):
         "extra_tags": self.get_cloud_client().get_resource_tags_as_dictionary(resource= (resource if resource_tags_resource is None else resource_tags_resource)),
         "extra_id": (
           resource_id if not None else (
-            self.get_cloud_client().get_resource_location(resource= resource) if resource is not None else (
-            self.get_cloud_client().get_account_id(account= account) if account is not None else  None))),
+            self.get_cloud_client().get_account_id(account= account) if account is not None else  None)),
       },
       self.get_cloud_client().serialize_resource(resource= resource) if resource is not None else self.get_cloud_client().serialize_resource(resource= account)
     ])

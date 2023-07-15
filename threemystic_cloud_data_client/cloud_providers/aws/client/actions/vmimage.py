@@ -27,5 +27,22 @@ class cloud_data_client_aws_client_action(base):
   
   
   
-  async def _process_account_data_region(self, account, region, loop, *args, **kwargs):
-    pass
+  async def _process_account_data_region(self, account, region, resource_groups, loop, *args, **kwargs):
+    ec2_client = self.get_cloud_client().get_boto_client(
+      client= "ec2",
+      account= account,
+      region= region
+    )
+
+    awsdata = self.get_cloud_client().general_boto_call_array(
+      boto_call=lambda item: ec2_client.describe_images(**item),
+      boto_params= {"Owners": ["self"], "IncludeDeprecated": True},
+      boto_nextkey = "NextToken",
+      boto_key="Images"
+    )
+
+    return {
+      "region": region,
+      "resource_groups": resource_groups,
+      "data": awsdata
+    }
