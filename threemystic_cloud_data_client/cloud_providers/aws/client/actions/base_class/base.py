@@ -85,7 +85,7 @@ class cloud_data_client_aws_client_action_base(base):
 
     resource_groups = self.get_cloud_client().get_resource_groups(account=account, region=region, rg_client=rg_client)
     
-    if len(resource_groups) > 0:      
+    if len(resource_groups) > 0:
       for filter_item in self.resource_group_filter:
         for resource_id, groups in self.get_cloud_client().get_resource_group_from_resource(account=account, region=region, rg_client=rg_client, resource_groups=resource_groups, filters_resource=[filter_item]).items():
           resource_id = resource_id.lower()
