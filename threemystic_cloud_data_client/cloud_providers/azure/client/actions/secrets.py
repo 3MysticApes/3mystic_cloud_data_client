@@ -10,8 +10,7 @@ class cloud_data_client_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
       data_action="secrets", 
-      logger_name= "cloud_data_client_azure_client_action_secrets", 
-      uniqueid_lambda = lambda: True,
+      logger_name= "cloud_data_client_azure_client_action_secrets",
       *args, **kwargs)
   
   async def __process_get_resources_key_vault_access_key(self, account, key_vault, *args, **kwargs):    

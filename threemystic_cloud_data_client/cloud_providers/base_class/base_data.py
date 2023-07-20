@@ -9,7 +9,6 @@ class cloud_data_client_provider_base_data(base):
     
     self._set_cloud_data_client(*args, **kwargs)
     self._set_client_name(*args, **kwargs)
-    self._set_resource_uniqueid_lambda(*args, **kwargs)
     self._set_max_process_pool(*args, **kwargs)
     self._set_max_thread_pool(*args, **kwargs)
     self._set_data_start(*args, **kwargs)
@@ -57,12 +56,6 @@ class cloud_data_client_provider_base_data(base):
   
   def _set_client_name(self, data_action, *args, **kwargs):
     self._client_name = f"{self.get_provider()}-{data_action}-data"
-
-  def get_resource_uniqueid_lambda(self, *args, **kwargs):
-    return self._uniqueid_lambda
-  
-  def _set_resource_uniqueid_lambda(self, uniqueid_lambda, *args, **kwargs):
-    self._uniqueid_lambda = uniqueid_lambda
   
   async def _pre_load_main_process(self, *args, **kwargs):
     pass

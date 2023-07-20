@@ -5,9 +5,8 @@ import asyncio
 class cloud_data_client_aws_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
-      data_action="ami", 
-      logger_name= "cloud_data_client_aws_client_action",
-      uniqueid_lambda = lambda: True,
+      data_action="vmimage",
+      logger_name= "cloud_data_client_aws_client_action_vmimage",
       *args, **kwargs)
     
     

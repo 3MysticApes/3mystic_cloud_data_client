@@ -10,8 +10,7 @@ class cloud_data_client_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
       data_action="dns", 
-      logger_name= "cloud_data_client_azure_client_action_dns", 
-      uniqueid_lambda = lambda: True,
+      logger_name= "cloud_data_client_azure_client_action_dns",
       *args, **kwargs)
   
   async def __process_get_resources_public(self, client, account, *args, **kwargs):    

@@ -8,8 +8,7 @@ class cloud_data_client_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
       data_action="vmimage", 
-      logger_name= "cloud_data_client_azure_client_action_vmimage", 
-      uniqueid_lambda = lambda: True,
+      logger_name= "cloud_data_client_azure_client_action_vmimage",
       *args, **kwargs)
       
   async def _process_account_data(self, account, loop, *args, **kwargs):
