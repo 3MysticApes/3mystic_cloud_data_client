@@ -52,18 +52,7 @@ class cloud_data_client_aws_client_action_base(base):
 
   def get_accounts(self, *args, **kwargs):
 
-    if len(self.get_runparam_key(data_key= "data_accounts", default_value= [])) < 1:
-      return [ 
-        account for account in self.get_cloud_client().get_accounts() 
-        if account.resource_container ]
-    
-    return [ 
-        account for account in self.get_cloud_client().get_accounts()
-        if( account.resource_container and 
-            self.get_cloud_client().get_account_id(account= account) in self.get_runparam_key(data_key= "data_accounts", default_value= []) and 
-            not f'-{self.get_cloud_client().get_account_id(account= account)}' in self.get_runparam_key(data_key= "data_accounts", default_value= [])
-          )
-        ]
+    return self.get_cloud_client().get_accounts() 
   
   @abstractmethod
   async def _process_account_data_region(self, account, region, resource_groups, loop, *args, **kwargs):
