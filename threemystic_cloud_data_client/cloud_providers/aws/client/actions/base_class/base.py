@@ -52,7 +52,7 @@ class cloud_data_client_aws_client_action_base(base):
 
   def get_accounts(self, *args, **kwargs):
 
-    return self.get_cloud_client().get_accounts() 
+    return self.get_cloud_client().get_accounts()
   
   @abstractmethod
   async def _process_account_data_region(self, account, region, resource_groups, loop, *args, **kwargs):
