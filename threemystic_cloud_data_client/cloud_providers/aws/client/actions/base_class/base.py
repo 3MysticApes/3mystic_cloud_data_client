@@ -14,7 +14,7 @@ class cloud_data_client_aws_client_action_base(base):
     return []
   
   @auto_region_resourcebytype.setter
-  def _set_auto_region_resourcebytype(self, value, *args, **kwargs):
+  def auto_region_resourcebytype(self, value, *args, **kwargs):
     self._auto_region_resourcebytype = value
 
   @property  
@@ -25,7 +25,7 @@ class cloud_data_client_aws_client_action_base(base):
     return []
   
   @resource_group_filter.setter
-  def _set_resource_group_filter(self, value, *args, **kwargs):
+  def resource_group_filter(self, value, *args, **kwargs):
     self._resource_group_filter = value
   
   @property
@@ -36,7 +36,7 @@ class cloud_data_client_aws_client_action_base(base):
     return lambda item: None
   
   @arn_lambda.setter
-  def _set_arn_lambda(self, value, *args, **kwargs):
+  def arn_lambda(self, value, *args, **kwargs):
     self._arn_lambda = value
   
   @property
@@ -47,7 +47,7 @@ class cloud_data_client_aws_client_action_base(base):
     return None
   
   @data_id_name.setter
-  def _set_data_id_name(self, value):
+  def data_id_name(self, value):
     self._data_id_name = value
 
   def get_accounts(self, *args, **kwargs):

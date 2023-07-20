@@ -10,6 +10,14 @@ class cloud_data_client_aws_client_action(base):
       uniqueid_lambda = lambda: True,
       *args, **kwargs)
     
+    
+    self.data_id_name = "ImageId"
+    
+    self.arn_lambda = (lambda item: self.get_cloud_client().get_resource_general_arn(
+      resource_type= "ec2",
+      resource_type_sub= "image", **item # {region, account_id, resource_id}
+    ))
+    
     self.auto_region_resourcebytype= ["Amazon Elastic Compute Cloud - Compute"]
     self.resource_group_filter = [
       {
@@ -19,11 +27,6 @@ class cloud_data_client_aws_client_action(base):
         ]
       }
     ]
-    self.arn_lambda = (lambda item: self.get_cloud_client().get_resource_general_arn(
-      resource_type= "ec2",
-      resource_type_sub= "image", **item # {region, account_id, resource_id}
-    ))
-    self.data_id_name = "ImageId"
   
   
   
