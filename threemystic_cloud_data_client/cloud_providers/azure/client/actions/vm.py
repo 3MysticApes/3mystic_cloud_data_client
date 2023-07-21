@@ -19,7 +19,7 @@ class cloud_data_client_azure_client_action(base):
     try:
         client = NetworkManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
 
-        return { self.get_cloud_client().get_resource_id_from_resource(resource= public_ip):public_ip for public_ip in self.get_cloud_client().sdk_request(
+        return { self.get_cloud_client().get_resource_id(resource= public_ip):public_ip for public_ip in self.get_cloud_client().sdk_request(
            tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
            lambda_sdk_command=lambda: client.public_ip_addresses.list_all()
           )
@@ -32,7 +32,7 @@ class cloud_data_client_azure_client_action(base):
     try:
       client = NetworkManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
       return_data = {}
-      load_balancers = {self.get_cloud_client().get_resource_id_from_resource(resource= lb): {"serialized": self.get_cloud_client().serialize_resource(resource= lb), "raw": lb} for lb in self.get_cloud_client().sdk_request(
+      load_balancers = {self.get_cloud_client().get_resource_id(resource= lb): {"serialized": self.get_cloud_client().serialize_resource(resource= lb), "raw": lb} for lb in self.get_cloud_client().sdk_request(
           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
           lambda_sdk_command=lambda: client.load_balancers.list_all()
         )}
@@ -52,7 +52,7 @@ class cloud_data_client_azure_client_action(base):
           for frontend_ip_load_balancing_rule in frontend_ip.load_balancing_rules:
             if frontend_ip_load_balancing_rule is None:
               continue
-            load_balancers_front_end[self.get_cloud_client().get_resource_id_from_resource(resource= frontend_ip_load_balancing_rule)] = self.get_cloud_client().get_resource_id_from_resource(resource= frontend_ip.public_ip_address)
+            load_balancers_front_end[self.get_cloud_client().get_resource_id(resource= frontend_ip_load_balancing_rule)] = self.get_cloud_client().get_resource_id(resource= frontend_ip.public_ip_address)
       
 
       for id_lb, lb in load_balancers.items():
@@ -74,14 +74,14 @@ class cloud_data_client_azure_client_action(base):
             if backend_address_load_balancing_rule is None:
               continue
 
-            if load_balancers_front_end.get(self.get_cloud_client().get_resource_id_from_resource(resource= backend_address_load_balancing_rule)) is None:
+            if load_balancers_front_end.get(self.get_cloud_client().get_resource_id(resource= backend_address_load_balancing_rule)) is None:
               continue
-            backend_frontend_connector.append(load_balancers_front_end.get(self.get_cloud_client().get_resource_id_from_resource(resource= backend_address_load_balancing_rule)))
+            backend_frontend_connector.append(load_balancers_front_end.get(self.get_cloud_client().get_resource_id(resource= backend_address_load_balancing_rule)))
             
           for backend_address in backend_address_pool.load_balancer_backend_addresses:
             if backend_address.network_interface_ip_configuration is not None:
-              if self.get_cloud_client().get_resource_id_from_resource(resource= backend_address.network_interface_ip_configuration) is not None:
-                key = self.get_cloud_client().get_resource_id_from_resource(resource= backend_address.network_interface_ip_configuration)
+              if self.get_cloud_client().get_resource_id(resource= backend_address.network_interface_ip_configuration) is not None:
+                key = self.get_cloud_client().get_resource_id(resource= backend_address.network_interface_ip_configuration)
                 key = key[0:key.rfind("/ipconfigurations/")]
               else:
                 key = backend_address.ip_address
@@ -121,19 +121,19 @@ class cloud_data_client_azure_client_action(base):
             {},
             {
               "extra_public_ips": [
-                self.get_cloud_client().serialize_resource(resource= public_ips[self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.public_ip_address)])
-                for ip_config in nic.ip_configurations if self.get_cloud_client().get_resource_id_from_resource(resource= ip_config.public_ip_address) is not None]
+                self.get_cloud_client().serialize_resource(resource= public_ips[self.get_cloud_client().get_resource_id(resource= ip_config.public_ip_address)])
+                for ip_config in nic.ip_configurations if self.get_cloud_client().get_resource_id(resource= ip_config.public_ip_address) is not None]
             },
             self.get_cloud_client().serialize_resource(resource= nic)
           ])
-          if return_data.get( self.get_cloud_client().get_resource_id_from_resource(resource= nic.virtual_machine)) is not None:
-            return_data.get( self.get_cloud_client().get_resource_id_from_resource(resource= nic.virtual_machine)).append(
+          if return_data.get( self.get_cloud_client().get_resource_id(resource= nic.virtual_machine)) is not None:
+            return_data.get( self.get_cloud_client().get_resource_id(resource= nic.virtual_machine)).append(
               nic_data
             )
             continue
           
 
-          return_data[self.get_cloud_client().get_resource_id_from_resource(resource= nic.virtual_machine)] = [
+          return_data[self.get_cloud_client().get_resource_id(resource= nic.virtual_machine)] = [
             nic_data
           ]
       
@@ -153,7 +153,7 @@ class cloud_data_client_azure_client_action(base):
           lambda_sdk_command=lambda: client.availability_sets.list_by_subscription()
         ):
           for vm in availability_set.virtual_machines:
-            return_data[self.get_cloud_client().get_resource_id_from_resource(resource= vm)] = self.get_cloud_client().serialize_resource(resource= availability_set)
+            return_data[self.get_cloud_client().get_resource_id(resource= vm)] = self.get_cloud_client().serialize_resource(resource= availability_set)
       
       return return_data
     except Exception as err:
@@ -162,7 +162,7 @@ class cloud_data_client_azure_client_action(base):
   async def __process_get_resources_vm(self, account, *args, **kwargs):
     resource_client = ResourceManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     try:
-        return {self.get_cloud_client().get_resource_id_from_resource(resource= resource): resource for resource in self.get_cloud_client().sdk_request(
+        return {self.get_cloud_client().get_resource_id(resource= resource): resource for resource in self.get_cloud_client().sdk_request(
            tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
            lambda_sdk_command=lambda: resource_client.resources.list(filter="resourceType eq 'Microsoft.Compute/virtualMachines'", expand="createdTime,changedTime,provisioningState")
           )
@@ -174,10 +174,10 @@ class cloud_data_client_azure_client_action(base):
     return_load_balancers = []
     
     for nic in vm_nics:
-      if load_balancers_by_nics.get(self.get_cloud_client().get_resource_id_from_resource(resource= nic)) is None:
+      if load_balancers_by_nics.get(self.get_cloud_client().get_resource_id(resource= nic)) is None:
         continue
         
-      return_load_balancers += (load_balancers_by_nics.get(self.get_cloud_client().get_resource_id_from_resource(resource= nic)))
+      return_load_balancers += (load_balancers_by_nics.get(self.get_cloud_client().get_resource_id(resource= nic)))
       # I might look into the whole private IP agress later, the issue is I have to validate networks
       
     
@@ -201,17 +201,17 @@ class cloud_data_client_azure_client_action(base):
             {},
             await self.get_base_return_data(
               account= self.get_cloud_client().serialize_resource(resource= account),
-              resource_id= self.get_cloud_client().get_resource_id_from_resource(resource= item),
+              resource_id= self.get_cloud_client().get_resource_id(resource= item),
               resource= item,
               region= self.get_cloud_client().get_resource_location(resource= item),
               resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
             ),
             {
-              "extra_resource": self.get_cloud_client().serialize_resource(tasks["resource"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item))),
-              "extra_availability_set": tasks["availability_sets"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item)),
-              "extra_nics": tasks["nics"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item)),
+              "extra_resource": self.get_cloud_client().serialize_resource(tasks["resource"].result().get(self.get_cloud_client().get_resource_id(resource= item))),
+              "extra_availability_set": tasks["availability_sets"].result().get(self.get_cloud_client().get_resource_id(resource= item)),
+              "extra_nics": tasks["nics"].result().get(self.get_cloud_client().get_resource_id(resource= item)),
               "extra_load_balancers": await self._process_account_data_get_vm_load_balancers(
-                vm_nics= tasks["nics"].result().get(self.get_cloud_client().get_resource_id_from_resource(resource= item)),
+                vm_nics= tasks["nics"].result().get(self.get_cloud_client().get_resource_id(resource= item)),
                 load_balancers_by_nics = tasks["load_balancers"].result()
               ),
             },

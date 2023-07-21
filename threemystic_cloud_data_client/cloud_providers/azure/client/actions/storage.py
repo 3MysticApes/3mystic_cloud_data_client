@@ -194,7 +194,7 @@ class cloud_data_client_azure_client_action(base):
         {},
         await self.get_base_return_data(
           account= self.get_cloud_client().serialize_resource(resource= account),
-          resource_id= self.get_cloud_client().get_resource_id_from_resource(resource= item),
+          resource_id= self.get_cloud_client().get_resource_id(resource= item),
           resource= item,
           region= self.get_cloud_client().get_resource_location(resource= item),
           resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
@@ -202,7 +202,7 @@ class cloud_data_client_azure_client_action(base):
         {
           "extra_attached_devices": (await self.__get_attached_devices(account=account, disk= item, loop= loop)),
           "extra_resource_cost": {
-            "period": cost_by_resource_results.get(self.get_cloud_client().get_resource_id_from_resource(resource= item)) for period, cost_by_resource_results in cost_by_resource.items()
+            "period": cost_by_resource_results.get(self.get_cloud_client().get_resource_id(resource= item)) for period, cost_by_resource_results in cost_by_resource.items()
           }
         }])
 

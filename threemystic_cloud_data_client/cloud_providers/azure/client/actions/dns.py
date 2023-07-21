@@ -15,7 +15,7 @@ class cloud_data_client_azure_client_action(base):
   
   async def __process_get_resources_public(self, client, account, *args, **kwargs):    
     try:      
-      return { self.get_cloud_client().get_resource_id_from_resource(resource= dns):dns for dns in self.get_cloud_client().sdk_request(
+      return { self.get_cloud_client().get_resource_id(resource= dns):dns for dns in self.get_cloud_client().sdk_request(
           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
           lambda_sdk_command=lambda: client.zones.list()
         )
@@ -49,7 +49,7 @@ class cloud_data_client_azure_client_action(base):
   
   async def __process_get_resources_private_dns(self, client, account, *args, **kwargs):    
     try:      
-      return { self.get_cloud_client().get_resource_id_from_resource(resource= dns):dns for dns in self.get_cloud_client().sdk_request(
+      return { self.get_cloud_client().get_resource_id(resource= dns):dns for dns in self.get_cloud_client().sdk_request(
           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
           lambda_sdk_command=lambda: client.private_zones.list()
         )
@@ -101,7 +101,7 @@ class cloud_data_client_azure_client_action(base):
   async def __process_get_resources_resource_dns(self, account, *args, **kwargs):    
     resource_client = ResourceManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     try:
-        return {self.get_cloud_client().get_resource_id_from_resource(resource= resource): resource for resource in self.get_cloud_client().sdk_request(
+        return {self.get_cloud_client().get_resource_id(resource= resource): resource for resource in self.get_cloud_client().sdk_request(
            tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
            lambda_sdk_command=lambda: resource_client.resources.list(filter="resourceType eq 'Microsoft.Network/privateDnsZones' or resourceType eq 'Microsoft.Network/dnsZones'", expand="createdTime,changedTime,provisioningState")
           )
@@ -196,7 +196,7 @@ class cloud_data_client_azure_client_action(base):
           {},
           await self.get_base_return_data(
             account= self.get_cloud_client().serialize_resource(resource= account),
-            resource_id= self.get_cloud_client().get_resource_id_from_resource(resource= tasks_data[f'{id};item'].result()),
+            resource_id= self.get_cloud_client().get_resource_id(resource= tasks_data[f'{id};item'].result()),
             resource= tasks_data[f'{id};item'].result(),
             region= self.get_cloud_client().get_resource_location(resource= tasks_data[f'{id};item'].result()),
             resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= tasks_data[f'{id};item'].result())],

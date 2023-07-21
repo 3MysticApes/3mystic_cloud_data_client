@@ -14,9 +14,7 @@ class cloud_data_client_azure_client_action(base):
   
   async def _process_account_data_storage_size(self, client, account, storage_account, **kwargs):
       try:
-        
-        storage_account_name= self.get_cloud_client().get_resource_name_from_resource(resource= storage_account)
-        storage_account_id= self.get_cloud_client().get_resource_id_from_resource(resource= storage_account)
+        storage_account_id= self.get_cloud_client().get_resource_id(resource= storage_account)
         storage_size = self.get_cloud_client().sdk_request(
           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
           lambda_sdk_command=lambda: client.metrics.list(
@@ -36,7 +34,7 @@ class cloud_data_client_azure_client_action(base):
                 sum_storage += Decimal(data.average)
               interval_count += 1
         
-        return Decimal(sum_storage/interval_count).quantize(Decimal('0'), ROUND_HALF_UP) 
+        return Decimal(sum_storage/interval_count).quantize(Decimal('0'), ROUND_HALF_UP)
       except Exception as err:
         return None
         
@@ -83,7 +81,7 @@ class cloud_data_client_azure_client_action(base):
           {},
           await self.get_base_return_data(
             account= self.get_cloud_client().serialize_resource(resource= account),
-            resource_id= self.get_cloud_client().get_resource_id_from_resource(resource= item.get("container") if item.get("container") is not None else item.get("storage_account")),
+            resource_id= self.get_cloud_client().get_resource_id(resource= item.get("container") if item.get("container") is not None else item.get("storage_account")),
             resource = item.get("container"),
             region= self.get_cloud_client().get_resource_location(resource= item.get("storage_account")),
             resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= item.get("storage_account"))],

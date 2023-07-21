@@ -28,7 +28,7 @@ class cloud_data_client_azure_client_action(base):
             gallery_name= gallery.name
           )
         ):
-        image_gallery_images[self.get_cloud_client().get_resource_id_from_resource(resource= gallery)] = self.get_common().helper_type().dictionary().merge_dictionary([
+        image_gallery_images[self.get_cloud_client().get_resource_id(resource= gallery)] = self.get_common().helper_type().dictionary().merge_dictionary([
           {},
           {"extra_versions": [
             self.get_cloud_client().serialize_resource(resource= image_version) 
@@ -53,12 +53,12 @@ class cloud_data_client_azure_client_action(base):
           {},
           await self.get_base_return_data(
             account= self.get_cloud_client().serialize_resource(resource= account),
-            resource_id= self.get_cloud_client().get_resource_id_from_resource(resource= item),
+            resource_id= self.get_cloud_client().get_resource_id(resource= item),
             resource= item,
             region= self.get_cloud_client().get_resource_location(resource= item),
             resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
           ),
-          image_gallery_images[self.get_cloud_client().get_resource_id_from_resource(resource= item)],
+          image_gallery_images[self.get_cloud_client().get_resource_id(resource= item)],
         ]) for item in image_gallery_images
       ]
     }
