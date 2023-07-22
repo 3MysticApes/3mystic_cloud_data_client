@@ -392,5 +392,5 @@ class cloud_data_client_aws_client_action(base):
     return {
       "region": region,
       "resource_groups": resource_groups,
-      "data": []
+      "data": tasks["instances"].result()
     }

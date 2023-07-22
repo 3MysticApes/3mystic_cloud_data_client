@@ -235,7 +235,7 @@ class cloud_data_client_azure_client_action(base):
               resource= item,
               region= self.get_cloud_client().get_resource_location(resource= item),
               resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
-            ),            
+            ),     
             {
               "properties": {
                 "instanceView": self.get_common().helper_type().general().get_container_value(
