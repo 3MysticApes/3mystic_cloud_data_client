@@ -84,15 +84,27 @@ class cloud_data_client_aws_client_action(base):
     
     return return_data
   
-  async def __process_account_region_lbinstances_targethealth(self, alb_client, targetgroup_arn, *args, **kwargs):
-    return alb_client.describe_target_health(TargetGroupArn=targetgroup_arn)
+  async def __process_account_region_lb_instances_targethealth(self, alb_client, targetgroup_arn, *args, **kwargs):
+    return self.get_cloud_client().general_boto_call_array(
+      boto_call=lambda: alb_client.describe_target_health(TargetGroupArn=targetgroup_arn),
+      boto_params= None,
+      boto_nextkey = None,
+      boto_key="LoadBalancerDescriptions",
+      logger = self.get_common().get_logger()
+    )
 
-  async def __process_account_region_lbinstances_targetgroups(self, alb_client, lb_arn, *args, **kwargs):
-    return alb_client.describe_target_groups(LoadBalancerArn=lb_arn)
+  async def __process_account_region_lb_instances_targetgroups(self, alb_client, lb_arn, *args, **kwargs):
+    return self.get_cloud_client().general_boto_call_array(
+      boto_call=lambda: alb_client.describe_target_groups(LoadBalancerArn=lb_arn),
+      boto_params= None,
+      boto_nextkey = None,
+      boto_key="LoadBalancerDescriptions",
+      logger = self.get_common().get_logger()
+    )
   
-  async def __process_account_region_lbinstances(self, account, region, loop, *args, **kwargs):
+  async def __process_account_region_lb_instances(self, account, region, loop, *args, **kwargs):
 
-      lbInstances = {}
+      lb_instances = {}
       
       elbClassic = self.get_cloud_client().get_boto_client(
         client= "elb",
@@ -109,15 +121,15 @@ class cloud_data_client_aws_client_action(base):
       )
       
       for elb in elbs:
-        numInstances = len(elb['Instances'])
-        if numInstances < 1:
+        num_instances = len(elb['Instances'])
+        if num_instances < 1:
           continue
         for i in elb['Instances']:
-          if not i['InstanceId'] in lbInstances:
-            lbInstances[i['InstanceId']] = {}
-          if elb['LoadBalancerName'] in lbInstances[i['InstanceId']]:
+          if not i['InstanceId'] in lb_instances:
+            lb_instances[i['InstanceId']] = {}
+          if elb['LoadBalancerName'] in lb_instances[i['InstanceId']]:
             continue
-          lbInstances[i['InstanceId']][elb['LoadBalancerName']] = ({"instance": i['InstanceId'], "lbType": "ELB", "lbName": elb['LoadBalancerName'], "lbDNSName": elb['DNSName']})
+          lb_instances[i['InstanceId']][elb['LoadBalancerName']] = ({"instance": i['InstanceId'], "lbType": "ELB", "lbName": elb['LoadBalancerName'], "lbDNSName": elb['DNSName']})
       
       alb = self.get_cloud_client().get_boto_client(
         client= "elbv2",
@@ -133,19 +145,19 @@ class cloud_data_client_aws_client_action(base):
         logger = self.get_common().get_logger()
       )
       if len(albs) < 1:
-        return lbInstances
+        return lb_instances
 
       targetGroups = { 
-        lb['LoadBalancerArn']: loop.create_task(self.__process_account_region_lbinstances_targetgroups(alb_client= alb, lb_arn= lb['LoadBalancerArn'])) for lb in albs
+        lb['LoadBalancerArn']: loop.create_task(self.__process_account_region_lb_instances_targetgroups(alb_client= alb, lb_arn= lb['LoadBalancerArn'])) for lb in albs
       }
       
       if len(targetGroups) < 1:
-        return lbInstances
+        return lb_instances
       await asyncio.wait(targetGroups.values())
     
-      for lb in albs:   
+      for lb in albs:
         targets_health = {
-          group['TargetGroupArn']: loop.create_task(self.__process_account_region_lbinstances_targethealth(alb_client= alb, targetgroup_arn= group['TargetGroupArn'])) for group in targetGroups[lb['LoadBalancerArn']].result()['TargetGroups']
+          group['TargetGroupArn']: loop.create_task(self.__process_account_region_lb_instances_targethealth(alb_client= alb, targetgroup_arn= group['TargetGroupArn'])) for group in targetGroups[lb['LoadBalancerArn']].result()['TargetGroups']
         }  
         if len(targets_health) < 1:
          continue
@@ -156,13 +168,13 @@ class cloud_data_client_aws_client_action(base):
             if len(target['Target']) < 1:
               continue
 
-            if not target['Target']['Id'] in lbInstances:
-              lbInstances[target['Target']['Id']] = {}
-            if lb['LoadBalancerName'] in lbInstances[target['Target']['Id']]:
+            if not target['Target']['Id'] in lb_instances:
+              lb_instances[target['Target']['Id']] = {}
+            if lb['LoadBalancerName'] in lb_instances[target['Target']['Id']]:
               continue
-            lbInstances[target['Target']['Id']][lb['LoadBalancerName']] = ({"instance": target['Target']['Id'], "lbType": "ALB", "lbName": lb['LoadBalancerName'], "lbDNSName": lb['DNSName']})        
+            lb_instances[target['Target']['Id']][lb['LoadBalancerName']] = ({"instance": target['Target']['Id'], "lbType": "ALB", "lbName": lb['LoadBalancerName'], "lbDNSName": lb['DNSName']})        
       
-      return lbInstances
+      return lb_instances
   
   async def __get_ec2_volume_details(self, ec2_client, *args, **kwargs):
         
@@ -271,7 +283,7 @@ class cloud_data_client_aws_client_action(base):
         "Version": instance_information.get('AgentVersion'),
     } 
   
-  async def __get_instance_withextra_data(self, ec2_client, ssm_client, task_asg_by_instance, account, region, lbInstances, instance, loop, *args, **kwargs):
+  async def __get_instance_withextra_data(self, ec2_client, ssm_client, task_asg_by_instance, account, region, lb_instances, instance, loop, *args, **kwargs):
       
       
       extra_data_tasks = {
@@ -286,7 +298,7 @@ class cloud_data_client_aws_client_action(base):
         "extra_platform": instance["Platform"] if not self.get_common().helper_type().string().is_null_or_whitespace(string_value= instance.get("Platform")) else "Linux",
         "extra_subnet": instance["SubnetId"] if instance.get("SubnetId") is not None else "EC2Classic",
         "extra_vpc": instance["VpcId"] if instance.get("VpcId") is not None else "EC2Classic",
-        "extra_lb": lbInstances.get(instance["InstanceId"]) if lbInstances is not None else None,
+        "extra_lb": lb_instances.get(instance["InstanceId"]) if lb_instances is not None else None,
       }
 
       await asyncio.wait(extra_data_tasks.values())
@@ -331,7 +343,7 @@ class cloud_data_client_aws_client_action(base):
       return []
 
     pre_process_tasks = {
-      "lb_instances": loop.create_task(self.__process_account_region_lbinstances(account, region, loop, *args, **kwargs)),
+      "lb_instances": loop.create_task(self.__process_account_region_lb_instances(account, region, loop, *args, **kwargs)),
       "volume_details": loop.create_task(self.__get_ec2_volume_details(ec2_client= ec2_client, *args, **kwargs))
 
     }
@@ -347,7 +359,7 @@ class cloud_data_client_aws_client_action(base):
           continue
         
         instance_ebs_encrypted[instance[self.data_id_name]] = None
-        instance_tasks.append(loop.create_task(self.__get_instance_withextra_data(ec2_client=ec2_client, ssm_client= ssm_client, task_asg_by_instance= task_asg_by_instance, account= account, region= region, lbInstances=pre_process_tasks["lb_instances"].result(), instance= instance, loop= loop)))
+        instance_tasks.append(loop.create_task(self.__get_instance_withextra_data(ec2_client=ec2_client, ssm_client= ssm_client, task_asg_by_instance= task_asg_by_instance, account= account, region= region, lb_instances=pre_process_tasks["lb_instances"].result(), instance= instance, loop= loop)))
         if instance.get("BlockDeviceMappings") is not None:
           for block_device in instance["BlockDeviceMappings"]:
             if block_device.get("Ebs") is None:
