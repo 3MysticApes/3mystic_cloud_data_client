@@ -298,7 +298,7 @@ class cloud_data_client_aws_client_action(base):
 
       extra_data["extra_asg"] = extra_data_tasks["_ignore_extra_asg"].result().get(instance["InstanceId"]) if extra_data_tasks["_ignore_extra_asg"].result() is not None else None
       if extra_data["extra_asg"] is None:
-        extra_data["extra_asg"] = self.__get_asg_extra_data(instance_tags= extra_data["extra_tags"])
+        extra_data["extra_asg"] = self.__get_asg_extra_data(instance_tags= self.get_cloud_client().get_resource_tags_as_dictionary(resource= instance))
       
       return self.get_common().helper_type().dictionary().merge_dictionary([{}, extra_data, instance])
   
