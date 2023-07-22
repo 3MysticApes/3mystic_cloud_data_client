@@ -104,14 +104,14 @@ class cloud_data_client_azure_client_action(base):
            
     except Exception as err:
       print(err)
-      return {} 
+      return {}
 
   async def __process_get_resources_vm_nics(self, account, public_ips, *args, **kwargs):    
     try:
       client = NetworkManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
       return_data = {}
       for nic in self.get_cloud_client().sdk_request(
-          tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+          tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True),
           lambda_sdk_command=lambda: client.network_interfaces.list_all()
         ):
           if nic.virtual_machine is None:
@@ -169,6 +169,18 @@ class cloud_data_client_azure_client_action(base):
         }
     except:
         return {}
+    
+  async def __process_get_resources_vm_statuses(self, account, client, *args, **kwargs):
+    try:
+        return {self.get_cloud_client().get_resource_id(resource= resource): self.get_cloud_client().serialize_resource(resource= resource) for resource in self.get_cloud_client().sdk_request(
+           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True),
+           lambda_sdk_command=lambda: client.virtual_machines.list_all(
+            status_only= True
+           )
+          )
+        }
+    except:
+        return {}
 
   async def _process_account_data_get_vm_load_balancers(self, vm_nics, load_balancers_by_nics, *args, **kwargs):
     return_load_balancers = []
@@ -183,11 +195,29 @@ class cloud_data_client_azure_client_action(base):
     
     return return_load_balancers
   
+  def __process_get_resources_vm_get_state(self, instanceView, *args, **kwargs):
+    if instanceView is None:
+      return None
+    
+    statuses = instanceView.get("statuses")
+    if statuses is None:
+      return None
+    
+    for status in statuses:
+      if "powerstate/" in self.get_common().helper_type().string().set_case(string_value= status.get("code"), case= "lower"):
+        return self.get_common().helper_type().string().set_case(string_value= self.get_common().helper_type().string().split(
+          string_value= status.get("code"),
+          separator= "[/]"
+        )[-1], case= "upper")
+      
+    return None
   async def _process_account_data(self, account, loop, *args, **kwargs):
     client = ComputeManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
+
     public_ips = await self.__process_get_resources_vm_public_ips(account= account)
     tasks = {
         "resource": loop.create_task(self.__process_get_resources_vm(account= account)),
+        "vm_statuses": loop.create_task(self.__process_get_resources_vm_statuses(account= account, client= client)),
         "availability_sets": loop.create_task(self.__process_get_resources_vm_availability_sets(client= client, account= account)),
         "nics": loop.create_task(self.__process_get_resources_vm_nics(account= account, public_ips= public_ips)),
         "load_balancers": loop.create_task(self.__process_get_resources_vm_load_balancers(account= account, public_ips= public_ips)),
@@ -205,8 +235,19 @@ class cloud_data_client_azure_client_action(base):
               resource= item,
               region= self.get_cloud_client().get_resource_location(resource= item),
               resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= item)],
-            ),
+            ),            
             {
+              "properties": {
+                "instanceView": self.get_common().helper_type().general().get_container_value(
+                  container= tasks["vm_statuses"].result().get(self.get_cloud_client().get_resource_id(resource= item)), 
+                  value_key= ["properties", "instanceView"])
+              }
+            },
+            {
+              "extra_longlived": True,
+              "extra_state": self.__process_get_resources_vm_get_state(instanceView= self.get_common().helper_type().general().get_container_value(
+                  container= tasks["vm_statuses"].result().get(self.get_cloud_client().get_resource_id(resource= item)), 
+                  value_key= ["properties", "instanceView"])),              
               "extra_resource": self.get_cloud_client().serialize_resource(tasks["resource"].result().get(self.get_cloud_client().get_resource_id(resource= item))),
               "extra_availability_set": tasks["availability_sets"].result().get(self.get_cloud_client().get_resource_id(resource= item)),
               "extra_nics": tasks["nics"].result().get(self.get_cloud_client().get_resource_id(resource= item)),
@@ -216,7 +257,7 @@ class cloud_data_client_azure_client_action(base):
               ),
             },
           ]) for item in self.get_cloud_client().sdk_request(
-           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
+           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True),
            lambda_sdk_command=lambda: client.virtual_machines.list_all()
           )
         ]

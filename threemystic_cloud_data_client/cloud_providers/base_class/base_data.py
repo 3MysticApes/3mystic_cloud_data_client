@@ -5,7 +5,7 @@ from tqdm.asyncio import tqdm
 
 class cloud_data_client_provider_base_data(base):
   def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)   
+    super().__init__(*args, **kwargs)
     
     self._set_cloud_data_client(*args, **kwargs)
     self._set_client_name(*args, **kwargs)
@@ -13,13 +13,30 @@ class cloud_data_client_provider_base_data(base):
     self._set_max_thread_pool(*args, **kwargs)
     self._set_data_start(*args, **kwargs)
 
+    self._process_preloaded_data(*args, **kwargs)
+
+  
   @abstractmethod
   def get_accounts(self):
     pass
   
   @abstractmethod
-  async def _process_account_data(self, **kwargs):
+  async def _process_account_data(self, *args, **kwargs):
     raise Exception("_process_account_data is not DEFINED")
+  
+  @property
+  def required_extra_data(self, *args, **kwargs):
+    if hasattr(self, "_required_extra_data"):
+      return self._required_extra_data
+    
+    return {}
+  
+  @required_extra_data.setter
+  def required_extra_data(self, value, *args, **kwargs):
+    self._required_extra_data = value
+
+  def _process_preloaded_data(self, preloaded_data = None, *args, **kwargs):
+    pass
   
   def get_data_start(self, *args, **kwargs):
     return self.__data_start
@@ -57,7 +74,7 @@ class cloud_data_client_provider_base_data(base):
   def _set_client_name(self, data_action, *args, **kwargs):
     self._client_name = f"{self.get_provider()}-{data_action}-data"
   
-  async def _pre_load_main_process(self, *args, **kwargs):
+  async def _pre_load_main_process(self, pool, *args, **kwargs):
     pass
 
   async def _get_environment(self, account = None, resource = None, *args, **kwargs):
@@ -141,6 +158,22 @@ class cloud_data_client_provider_base_data(base):
       if e.errno != errno.EPIPE:
         raise
 
+  async def _process_get_data_by_id(self, results, id_override = None, *args, **kwargs):
+    results_by_id = {}
+    if self.get_common().helper_type().string().is_null_or_whitespace(string_value= id_override):
+      id_override = "extra_id"
+    for _, result_data in results.items():
+      for data in result_data:
+        results_by_id[data[id_override]] = data
+    
+    return results_by_id 
+  
+  async def get_data_by_id(self, results = None, id_override = None, *args, **kwargs):
+    if results is None:
+      results = await self.main( *args, **kwargs)
+      
+    return await self._process_get_data_by_id(results= results, id_override= id_override) 
+  
   async def __main_poolexecutor(self, *args, **kwargs):   
     with concurrent.futures.ThreadPoolExecutor(self.get_max_thread_pool()) as pool:
         return await self.main_process(
@@ -208,7 +241,7 @@ class cloud_data_client_provider_base_data(base):
     if condition_settings.get("case_insensitive") is True:
       data_value = self.get_common().helper_type().string().set_case(string_value= data_value, case= "lower")
       if self.get_common().helper_type().general().is_type(obj= condition_value, type_check= str):
-        condition_value = self.get_common().helper_type().string().set_case(string_value= value, case= "lower")
+        condition_value = self.get_common().helper_type().string().set_case(string_value= condition_value, case= "lower")
       elif self.get_common().helper_type().general().is_type(obj= condition_value, type_check= list):
         condition_value = [self.get_common().helper_type().string().set_case(string_value= value, case= "lower") for value in condition_value]
       else:
