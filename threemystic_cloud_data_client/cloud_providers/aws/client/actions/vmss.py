@@ -251,5 +251,18 @@ class cloud_data_client_aws_client_action(base):
     return {
       "region": region,
       "resource_groups": resource_groups,
-      "data": []
+      "data": [
+          self.get_common().helper_type().dictionary().merge_dictionary([
+            {},
+            {
+              "extra_launchconfig": self.get_common().helper_type().dictionary().merge_dictionary([
+                {},
+                {"extra_image": await self.__getImageInfo(image_id= task_deployconfig["config"].result().get(item['LaunchConfigurationName'])["ImageId"])},
+                task_deployconfig["config"].result().get(item['LaunchConfigurationName'])
+              ]) if item.get('LaunchConfigurationName') is not None else {},
+              "extra_launchtemplate": task_deployconfig["template"].result().get(item['LaunchTemplate']["LaunchTemplateId"]) if item.get('LaunchTemplate') is not None else {},
+            },
+            item
+          ]) for item in groups
+        ]
     }
