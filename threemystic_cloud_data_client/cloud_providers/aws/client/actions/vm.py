@@ -89,7 +89,7 @@ class cloud_data_client_aws_client_action(base):
       boto_call=lambda: alb_client.describe_target_health(TargetGroupArn=targetgroup_arn),
       boto_params= None,
       boto_nextkey = None,
-      boto_key="LoadBalancerDescriptions",
+      boto_key="TargetHealthDescriptions",
       logger = self.get_common().get_logger()
     )
 
@@ -98,7 +98,7 @@ class cloud_data_client_aws_client_action(base):
       boto_call=lambda: alb_client.describe_target_groups(LoadBalancerArn=lb_arn),
       boto_params= None,
       boto_nextkey = None,
-      boto_key="LoadBalancerDescriptions",
+      boto_key="TargetGroups",
       logger = self.get_common().get_logger()
     )
   
@@ -157,15 +157,15 @@ class cloud_data_client_aws_client_action(base):
     
       for lb in albs:
         targets_health = {
-          group['TargetGroupArn']: loop.create_task(self.__process_account_region_lb_instances_targethealth(alb_client= alb, targetgroup_arn= group['TargetGroupArn'])) for group in targetGroups[lb['LoadBalancerArn']].result()['TargetGroups']
+          group['TargetGroupArn']: loop.create_task(self.__process_account_region_lb_instances_targethealth(alb_client= alb, targetgroup_arn= group['TargetGroupArn'])) for group in targetGroups[lb['LoadBalancerArn']].result()
         }  
         if len(targets_health) < 1:
          continue
-        await asyncio.wait(targets_health.values())     
+        await asyncio.wait(targets_health.values())
 
         for _, targets in targets_health.items():
-          for target in targets.result()['TargetHealthDescriptions']:
-            if len(target['Target']) < 1:
+          for target in targets.result():
+            if target.get('Target') is None or len(target['Target']) < 1:
               continue
 
             if not target['Target']['Id'] in lb_instances:
