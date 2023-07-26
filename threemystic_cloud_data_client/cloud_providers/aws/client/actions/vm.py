@@ -1,3 +1,4 @@
+"""The AWS vm Action. This will pull the AWS EC2s"""
 from threemystic_cloud_data_client.cloud_providers.aws.client.actions.base_class.base import cloud_data_client_aws_client_action_base as base
 import asyncio
 from threemystic_cloud_data_client.cloud_providers.aws.client.actions.vmimage import cloud_data_client_aws_client_action as vmimage_data
@@ -36,7 +37,7 @@ class cloud_data_client_aws_client_action(base):
         "common": self.get_common(),
         "logger": self.get_common().get_logger()
       }
-      # This is required because #the normal disk command only looks at long lived disks
+      
       ami_data = vmimage_data(
         **base_action_params
       )
@@ -187,17 +188,17 @@ class cloud_data_client_aws_client_action(base):
 
       return { data["VolumeId"]:data for data in volumne_data }
   
-  async def __getImageInfo(self, imageId):
-    if imageId in self.required_extra_data["ami"]:
+  async def __getImageInfo(self, image_id, *args, **kwargs):
+    if image_id in self.required_extra_data["ami"]:
       return {
-        "Id": imageId,
-        "Name": self.required_extra_data["ami"][imageId]["Name"],
+        "Id": image_id,
+        "Name": self.required_extra_data["ami"][image_id]["Name"],
         "Description": self.required_extra_data["ami"].get("Description")
       }
 
 
     return {
-      "Id": imageId,
+      "Id": image_id,
     }
   
   async def __get_instance_attribute(self, client, instance, loop, attribute = None, *args, **kwargs):
@@ -287,7 +288,7 @@ class cloud_data_client_aws_client_action(base):
       
       
       extra_data_tasks = {
-        "extra_image": loop.create_task(self.__getImageInfo(imageId= instance["ImageId"])),
+        "extra_image": loop.create_task(self.__getImageInfo(image_id= instance["ImageId"])),
         "extra_instance_attributes": loop.create_task(self.__get_instance_attribute(account=account, client= ec2_client, instance=instance, loop= loop)),
         "extra_ssminfo": loop.create_task(self.__getSSMInfo(account=account, region=region, ssm_client=ssm_client, instance=instance)),
         "_ignore_extra_asg": task_asg_by_instance
