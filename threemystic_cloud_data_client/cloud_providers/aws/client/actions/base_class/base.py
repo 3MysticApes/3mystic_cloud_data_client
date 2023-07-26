@@ -4,7 +4,7 @@ import asyncio
 
 class cloud_data_client_aws_client_action_base(base):
   def __init__(self, *args, **kwargs):
-    super().__init__(provider= "aws", *args, **kwargs)  
+    super().__init__(provider= "aws", *args, **kwargs)
 
   @property
   def auto_region_resourcebytype(self, *args, **kwargs):
