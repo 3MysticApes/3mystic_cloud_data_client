@@ -44,7 +44,7 @@ class cloud_data_client_aws_client_action(base):
   async def __redshift(self, client, *args, **kwargs):
 
     return self.get_cloud_client().general_boto_call_array(
-      boto_call=lambda item: client.list_hosted_zones(**item),
+      boto_call=lambda item: client.describe_clusters(**item),
       boto_params={},
       boto_nextkey = "Marker",
       boto_key="Clusters"

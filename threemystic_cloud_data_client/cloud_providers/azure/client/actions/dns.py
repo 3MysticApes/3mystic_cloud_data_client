@@ -34,7 +34,7 @@ class cloud_data_client_azure_client_action(base):
     try:      
       return [ record_set for record_set in self.get_cloud_client().sdk_request(
           tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-          lambda_sdk_command=lambda: client.record_sets.list_all_by_dns_zone(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= dns), private_zone_name= dns.name)
+          lambda_sdk_command=lambda: client.record_sets.list_all_by_dns_zone(resource_group_name= self.get_cloud_client().get_resource_group_from_resource(resource= dns), zone_name= dns.name)
         )
       ]
            
