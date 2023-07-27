@@ -7,6 +7,28 @@ class cloud_data_client_aws_client_action_base(base):
     super().__init__(provider= "aws", *args, **kwargs)
 
   @property
+  def skip_global_region(self, *args, **kwargs):
+    if hasattr(self, "_skip_global_region"):
+      return self._skip_global_region
+    
+    return True
+  
+  @skip_global_region.setter
+  def skip_global_region(self, value, *args, **kwargs):
+    self._skip_global_region = value
+
+  @property
+  def override_global_region(self, *args, **kwargs):
+    if hasattr(self, "_override_global_region"):
+      return self._override_global_region
+    
+    return None
+  
+  @override_global_region.setter
+  def override_global_region(self, value, *args, **kwargs):
+    self._override_global_region = value
+
+  @property
   def auto_region_resourcebytype(self, *args, **kwargs):
     if hasattr(self, "_auto_region_resourcebytype"):
       return self._auto_region_resourcebytype
@@ -112,8 +134,25 @@ class cloud_data_client_aws_client_action_base(base):
       return return_data
 
     region_tasks = []
-    for region in regions[self.get_cloud_client().get_account_id(account= account)]:
-      region_tasks.append(loop.create_task(self._process_account_region(account=account, region=region, loop=loop, **kwargs)))
+    # if self.override_global_region
+
+    for region_key, region in regions[self.get_cloud_client().get_account_id(account= account)].items():
+      if region_key == "global" and self.skip_global_region:
+        continue
+      
+      if self.get_common().helper_type().string().is_null_or_whitespace(string_value= self.override_global_region):
+        region_tasks.append(loop.create_task(self._process_account_region(account=account, region=region, loop=loop, **kwargs)))
+        continue
+      
+      if region_key != "global":
+        region_tasks.append(loop.create_task(self._process_account_region(account=account, region=region, loop=loop, **kwargs)))
+        continue
+
+      if self.get_common().helper_type().string().set_case(string_value= self.override_global_region, case= "lower") in regions[self.get_cloud_client().get_account_id(account= account)]:
+        continue
+
+      region_tasks.append(loop.create_task(self._process_account_region(account=account, region= self.override_global_region, loop=loop, **kwargs)))
+
 
     if len(region_tasks)>0:
       await asyncio.wait(region_tasks)
