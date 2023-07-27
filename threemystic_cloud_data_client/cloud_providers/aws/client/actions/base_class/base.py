@@ -127,7 +127,8 @@ class cloud_data_client_aws_client_action_base(base):
           {
             "region": region_task.result().get("region"),
             "account_id": self.get_cloud_client().get_account_id(account= account),
-            "resource_id": item.get(self.data_id_name)
+            "resource_id": item.get(self.data_id_name),
+            "raw_item": item
           }
         )
         return_data["data"].append(

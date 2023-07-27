@@ -13,7 +13,7 @@ class cloud_data_client_aws_client_action(base):
     
     self.data_id_name = "AutoScalingGroupARN"
     
-    self.arn_lambda = (lambda item: item[self.data_id_name])
+    self.arn_lambda = (lambda item: item["raw_item"][self.data_id_name])
     
     self.auto_region_resourcebytype= ["Amazon Elastic Compute Cloud - Compute"]
     self.resource_group_filter = [

@@ -34,7 +34,7 @@ class cloud_data_client_aws_client_action(base):
   ]
     
   
-  async def __clusters(self, client, *args, **kwargs):
+  async def __clusters(self, client, account, region, resource_groups, *args, **kwargs):
 
     db_clusters = self.get_cloud_client().general_boto_call_array(
       boto_call=lambda item: client.describe_db_clusters(**item),
@@ -46,11 +46,20 @@ class cloud_data_client_aws_client_action(base):
     cluster_search = {}
     db_clusters_byid = {}
     for cluster in db_clusters:
-      db_clusters_byid[cluster["DBClusterIdentifier"]] = self.get_common().helper_type().dictionary().merge_dictionary(
-        [
-          {"extra_tags":  self.get_cloud_client().get_resource_tags_as_dictionary(resource= cluster)}, 
-          cluster
-        ]
+      resource_arn = (self.get_cloud_client().get_resource_general_arn(
+        resource_type= "rds",
+        resource_type_sub= "cluster", 
+        region= region,
+        account_id= self.get_cloud_client().get_account_id(account= account),
+        resource_id= cluster.get("DBClusterIdentifier")
+      ))
+      
+      db_clusters_byid[cluster["DBClusterIdentifier"]] =  await self.get_base_return_data(
+        account= account,
+        resource_id= cluster.get("DBClusterIdentifier"),
+        resource= cluster,
+        region= region,
+        resource_groups= resource_groups.get(resource_arn),
       )
       
       if cluster.get("DBClusterMembers") is None:
@@ -108,7 +117,7 @@ class cloud_data_client_aws_client_action(base):
     client = self.get_cloud_client().get_boto_client(client= 'rds',  account=account, region=region)
 
     tasks = {
-      "clusters": loop.create_task(self.__clusters(client= client)),
+      "clusters": loop.create_task(self.__clusters(client= client, account= account, region= region, resource_groups= resource_groups)),
       "databases": loop.create_task(self.__get_databases(client= client)),
       "pending_maintenance_actions": loop.create_task(self.__get_maintenance_actions(client= client)),
     }
