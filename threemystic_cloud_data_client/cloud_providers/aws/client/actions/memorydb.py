@@ -1,7 +1,6 @@
-"""The AWS vm Action. This will pull the AWS EC2s"""
+"""The AWS database Action. This will pull the AWS rds"""
 from threemystic_cloud_data_client.cloud_providers.aws.client.actions.base_class.base import cloud_data_client_aws_client_action_base as base
 import asyncio
-from threemystic_cloud_data_client.cloud_providers.aws.client.actions.vmimage import cloud_data_client_aws_client_action as vmimage_data
 
 class cloud_data_client_aws_client_action(base):
   def __init__(self, *args, **kwargs):
@@ -20,7 +19,7 @@ class cloud_data_client_aws_client_action(base):
     {
       'Name': 'resource-type',
       'Values': [
-              'AWS::MemoryDB::Cluster',
+        'AWS::MemoryDB::Cluster',
       ]
     }
   ]
