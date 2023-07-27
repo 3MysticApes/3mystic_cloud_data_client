@@ -41,14 +41,14 @@ class cloud_data_client_aws_client_action(base):
         resource["ResourceARN"].lower():resource["Tags"] for resource in resource_list
       }
 
-    async def __get_clusters(self, client, *args, **kwargs):
-      return self.get_cloud_client().general_boto_call_array(
-        boto_call=lambda item: client.describe_clusters(**item),
-        boto_params={"ShowShardDetails": True},
-        boto_nextkey = "NextToken",
-        boto_key="Clusters"
-      )
-  
+  async def __get_clusters(self, client, *args, **kwargs):
+    return self.get_cloud_client().general_boto_call_array(
+      boto_call=lambda item: client.describe_clusters(**item),
+      boto_params={"ShowShardDetails": True},
+      boto_nextkey = "NextToken",
+      boto_key="Clusters"
+    )
+
   async def _process_account_data_region(self, account, region, resource_groups, loop, *args, **kwargs):
     client = self.get_cloud_client().get_boto_client(client= 'memorydb',  account=account, region=region)
     resourcegroupstaggingapi_client = self.get_cloud_client().get_boto_client(client= 'resourcegroupstaggingapi',  account=account, region=region)

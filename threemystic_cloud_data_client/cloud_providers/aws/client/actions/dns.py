@@ -40,7 +40,7 @@ class cloud_data_client_aws_client_action(base):
     
   
   async def _process_account_data_region(self, account, region, resource_groups, loop, *args, **kwargs):
-    client = self.get_cloud_client().get_boto_client(client= 'memorydb',  account=account, region=region)
+    client = self.get_cloud_client().get_boto_client(client= 'route53',  account=account, region=region)
 
     tasks = {
       "main": loop.create_task(self.__hostedzones(client= client)),

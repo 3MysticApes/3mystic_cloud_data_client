@@ -81,10 +81,10 @@ class cloud_data_client_aws_client_action(base):
     return f"{resource_identifier_split[-2]}:{resource_identifier_split[-1]}"
   
   def __get_cluster_data_db(self, clusters, db, *args, **kwargs):
-    if not db["DBInstanceIdentifier"] in clusters["db_id_to_cluster_id"]:
+    if not db["DBInstanceIdentifier"] in clusters["cluster_dbmembers"]:
       return None
     
-    return clusters["clusters"][clusters["db_id_to_cluster_id"][db["DBInstanceIdentifier"]]]
+    return clusters["clusters"][clusters["cluster_dbmembers"][db["DBInstanceIdentifier"]]]
   
   async def __get_maintenance_actions(self, client, *args, **kwargs):
     pending_maintenance_actions = self.get_cloud_client().general_boto_call_array(
