@@ -63,7 +63,7 @@ class cloud_data_client_aws_client_action_base(base):
     return await self._process_account_data_region(
       account= account,
       region= region,
-      resource_groups= resource_groups, 
+      resource_groups= resource_groups if resource_groups is not None else {}, 
       loop= loop,
       **kwargs
     )
