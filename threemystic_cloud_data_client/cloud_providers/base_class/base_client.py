@@ -89,11 +89,18 @@ class cloud_data_client_provider_base_client(base):
         "help": "Data Action: This pulls Data Warehouse (Synapse/RedShift)",
         "action": 'store_const'
       },
-      "--db": {
+      "--db,--database": {
         "default": None, 
         "const": "database",
         "dest": "data_action",
         "help": "Data Action: This pulls the various non-inmemory databses",
+        "action": 'store_const'
+      },
+      "--memorydb": {
+        "default": None, 
+        "const": "memorydb",
+        "dest": "data_action",
+        "help": "Data Action: This pulls memorydbs IE Redis",
         "action": 'store_const'
       },
       "--vmimage": {
