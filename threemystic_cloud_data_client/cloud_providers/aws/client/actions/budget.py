@@ -10,6 +10,9 @@ class cloud_data_client_aws_client_action(base):
       logger_name= "cloud_data_client_aws_client_action_budget",
       *args, **kwargs)
   
+  async def _process_account_data_region(self, account, region, resource_groups, loop, *args, **kwargs):
+    pass
+  
   def __get_costdata_total_key(self, forecast_metric, *args, **kwargs):
     if self.get_common().helper_type().string().set_case(string_value= forecast_metric, case= "upper") == "NET_UNBLENDED_COST":
       return "NetUnblendedCost"
