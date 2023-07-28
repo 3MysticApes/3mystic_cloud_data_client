@@ -94,7 +94,7 @@ class cloud_data_client_aws_client_action(base):
       boto_nextkey_param = "NextPageToken",
       boto_key="ResultsByTime"
     )
-    print(results_by_time)
+    return results_by_time
      
     for cost_data in results_by_time:
       data_dt = self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(cost_data["TimePeriod"]["Start"]), dt_format= "%Y-%m-%d")
@@ -130,7 +130,7 @@ class cloud_data_client_aws_client_action(base):
     
 
     year_data = {}
-    self.__process_get_cost_data_process_year_data(
+    return self.__process_get_cost_data_process_year_data(
       year_data= year_data,
       client= client,
       account= account,
@@ -140,6 +140,8 @@ class cloud_data_client_aws_client_action(base):
       fiscal_end= fiscal_year_end
     )
 
+    return year_data
+
 
   async def _process_account_data(self, account, loop, *args, **kwargs):
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value= kwargs.get("fiscal_year_start")):
@@ -147,6 +149,11 @@ class cloud_data_client_aws_client_action(base):
     
     client = self.get_cloud_client().get_boto_client(client= 'ce',  account=account)
 
+    return {
+      "account": account,
+      "data": await self.__process_get_cost_data(account= account, client= client, loop= loop, *args, **kwargs)
+    }
+  
     return {
       "account": account,
       "data": [ self.get_common().helper_type().dictionary().merge_dictionary([
