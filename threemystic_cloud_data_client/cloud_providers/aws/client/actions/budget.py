@@ -75,7 +75,7 @@ class cloud_data_client_aws_client_action(base):
           'End': end_date.strftime("%Y-%m-%d"),
         },
         Granularity='DAILY',
-        Metric=forecast_metric,
+        Metrics=[forecast_metric],
         Filter={ 
           "Dimensions":{
             "Key":"LINKED_ACCOUNT",
