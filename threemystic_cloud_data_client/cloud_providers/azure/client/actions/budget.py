@@ -98,7 +98,55 @@ class cloud_data_client_azure_client_action(base):
       self.get_common().get_logger().exception(msg= f"{self.get_cloud_client().get_account_id(account= account)} - {str(err)}", extra={"exception": err})
       return {}
     
+  def __init_costdata_month(self, data_dt, *args, **kwargs):
+    return {
+      "currency": self.get_common().helper_type().string().set_case(self.get_cloud_data_client().get_default_currency(), case= "upper"),
+      "month": data_dt.month,
+      "year": data_dt.year,
+      "totals":{
+        "total": Decimal(0),
+        "fiscal_total": Decimal(0),
+        "forcast_total": Decimal(0),
+        "fiscal_forcast_total": Decimal(0),
+        "resource_group": {
+          "total":{},
+          "forcast_total":{},
+          "origional_currency_total":{},
+          "origional_currency_forcast_total":{},
+        },
+        "resource_type": {
+          "total":{},
+          "forcast_total":{},
+          "origional_currency_total":{},
+          "origional_currency_forcast_total":{},
+        }
+      },
+      "days":{}
+    }
   
+  def __init_costdata_month_day(self, data_dt, currency, *args, **kwargs):
+    return {
+      "currency": self.get_common().helper_type().string().set_case(self.get_cloud_data_client().get_default_currency(), case= "upper"),
+      "origional_currency": self.get_common().helper_type().string().set_case(string_value= currency, case= "upper"),
+      "date": data_dt,
+      "total": Decimal(0),
+      "forcast_total": Decimal(0),
+      "origional_currency_total": Decimal(0),
+      "origional_currency_forcast_total": Decimal(0),
+      "resource_group": {
+        "total":{},
+        "forcast_total":{},
+        "origional_currency_total":{},
+        "origional_currency_forcast_total":{},
+      },
+      "resource_type": {
+        "total":{},
+        "forcast_total":{},
+        "origional_currency_total":{},
+        "origional_currency_forcast_total":{},
+      }
+    }
+    
   async def __process_get_cost_data_daily_data(self, usage, fiscal_start, fiscal_end, query_grouping, is_forcast = False, *args, **kwargs):
     by_month = { }
 
@@ -135,53 +183,10 @@ class cloud_data_client_azure_client_action(base):
         
       day_key = self.get_common().helper_type().datetime().datetime_as_string(dt_format= "%Y%m%d", dt= data_dt)
       if by_month.get(by_month_key) is None:
-        by_month[by_month_key] = {
-          "currency": self.get_common().helper_type().string().set_case(self.get_cloud_data_client().get_default_currency(), case= "upper"),
-          "month": data_dt.month,
-          "year": data_dt.year,
-          "totals":{
-            "total": Decimal(0),
-            "fiscal_total": Decimal(0),
-            "forcast_total": Decimal(0),
-            "fiscal_forcast_total": Decimal(0),
-            "resource_group": {
-              "total":{},
-              "forcast_total":{},
-              "origional_currency_total":{},
-              "origional_currency_forcast_total":{},
-            },
-            "resource_type": {
-              "total":{},
-              "forcast_total":{},
-              "origional_currency_total":{},
-              "origional_currency_forcast_total":{},
-            }
-          },
-          "days":{}
-        }
+        by_month[by_month_key] = self.__init_costdata_month(data_dt= data_dt)
       
       if by_month[by_month_key]["days"].get(day_key) is None:
-        by_month[by_month_key]["days"][day_key] = {
-          "currency": self.get_common().helper_type().string().set_case(self.get_cloud_data_client().get_default_currency(), case= "upper"),
-          "origional_currency": self.get_common().helper_type().string().set_case(string_value= cost_data[column_indexs["currency"]], case= "upper"),
-          "date": data_dt,
-          "total": Decimal(0),
-          "forcast_total": Decimal(0),
-          "origional_currency_total": Decimal(0),
-          "origional_currency_forcast_total": Decimal(0),
-          "resource_group": {
-            "total":{},
-            "forcast_total":{},
-            "origional_currency_total":{},
-            "origional_currency_forcast_total":{},
-          },
-          "resource_type": {
-            "total":{},
-            "forcast_total":{},
-            "origional_currency_total":{},
-            "origional_currency_forcast_total":{},
-          }
-        }
+        by_month[by_month_key]["days"][day_key] = self.__init_costdata_month_day(data_dt= data_dt, currency= cost_data[column_indexs["currency"]])
 
       
       raw_row_data_cost = (cost_data[column_indexs[cost_key]])
@@ -326,9 +331,6 @@ class cloud_data_client_azure_client_action(base):
     fiscal_year_end = self.get_common().helper_type().datetime().yesterday(dt= (fiscal_year_start_date
                  + self.get_common().helper_type().datetime().time_delta(years= 1, dt= fiscal_year_start_date)))
     
-    # yesterday = self.get_common().helper_type().datetime().yesterday(dt= self.get_data_start())
-    # last_year = (self.get_common().helper_type().datetime().yesterday(dt= self.get_data_start())
-    #              + self.get_common().helper_type().datetime().time_delta(years= -1))
     start_date = (fiscal_year_start_date
                  + self.get_common().helper_type().datetime().time_delta(months= -1, dt= fiscal_year_start_date))
     

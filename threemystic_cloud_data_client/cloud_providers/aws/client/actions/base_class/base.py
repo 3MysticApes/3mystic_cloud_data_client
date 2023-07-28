@@ -134,7 +134,6 @@ class cloud_data_client_aws_client_action_base(base):
       return return_data
 
     region_tasks = []
-    # if self.override_global_region
 
     for region_key, region in regions[self.get_cloud_client().get_account_id(account= account)].items():
       if region_key == "global" and self.skip_global_region:
