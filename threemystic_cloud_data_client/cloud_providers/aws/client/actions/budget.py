@@ -66,10 +66,40 @@ class cloud_data_client_aws_client_action(base):
       }
     }
   
-  async def __process_get_cost_data_process_year_data(self, year_data, client, account, start_date, end_date, fiscal_start, fiscal_end, forecast_metric = ["NET_UNBLENDED_COST"], *args, **kwargs):
+  async def __process_get_cost_data_last_fourteendays_resources(self, year_data, client, account, fiscal_start, fiscal_end, forecast_metric = ["NET_UNBLENDED_COST"], *args, **kwargs):
 
     results_by_time = self.get_cloud_client().general_boto_call_array(
       boto_call=lambda: client.get_cost_and_usage_with_resources(
+        TimePeriod={
+          'Start': (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= 7)).strftime("%Y-%m-%d"),
+          'End': self.get_data_start().strftime("%Y-%m-%d"),
+        },
+        Granularity='DAILY',
+        Metrics=forecast_metric,
+        Filter={
+          "Dimensions":{
+            "Key":"LINKED_ACCOUNT",
+            "Values":[self.get_cloud_client().get_account_id(account= account)]
+          }
+        },
+        GroupBy= [
+          {
+            "Type": "DIMENSION",
+            "Key": "SERVICE"
+          }
+        ]
+      ),
+      boto_params= None,
+      boto_nextkey = "NextPageToken",
+      boto_nextkey_param = "NextPageToken",
+      boto_key="ResultsByTime"
+    )
+    return results_by_time
+  
+  async def __process_get_cost_data_process_year_data(self, year_data, client, account, start_date, end_date, fiscal_start, fiscal_end, forecast_metric = ["NET_UNBLENDED_COST"], *args, **kwargs):
+
+    results_by_time = self.get_cloud_client().general_boto_call_array(
+      boto_call=lambda: client.get_cost_and_usage(
         TimePeriod={
           'Start': start_date.strftime("%Y-%m-%d"),
           'End': end_date.strftime("%Y-%m-%d"),
@@ -130,15 +160,25 @@ class cloud_data_client_aws_client_action(base):
     
 
     year_data = {}
-    return await self.__process_get_cost_data_process_year_data(
-      year_data= year_data,
-      client= client,
-      account= account,
-      start_date= start_date,
-      end_date= self.get_data_start() if forecast_end > self.get_data_start() else forecast_end,
-      fiscal_start= fiscal_year_start_date, 
-      fiscal_end= fiscal_year_end
-    )
+    return {
+      "ytd_monthly": await self.__process_get_cost_data_process_year_data(
+        year_data= year_data,
+        client= client,
+        account= account,
+        start_date= start_date,
+        end_date= self.get_data_start() if forecast_end > self.get_data_start() else forecast_end,
+        fiscal_start= fiscal_year_start_date, 
+        fiscal_end= fiscal_year_end
+      ),
+      "last14": await self.__process_get_cost_data_last_fourteendays_resources(
+        year_data= year_data,
+        client= client,
+        account= account,
+        fiscal_start= fiscal_year_start_date, 
+        fiscal_end= fiscal_year_end
+      )
+
+    }
 
     return year_data
 
