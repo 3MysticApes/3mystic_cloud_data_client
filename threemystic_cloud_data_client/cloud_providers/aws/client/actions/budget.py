@@ -104,7 +104,7 @@ class cloud_data_client_aws_client_action(base):
           'Start': start_date.strftime("%Y-%m-%d"),
           'End': end_date.strftime("%Y-%m-%d"),
         },
-        Granularity='DAILY',
+        Granularity='MONTHLY',
         Metrics=forecast_metric,
         Filter={
           "Dimensions":{
