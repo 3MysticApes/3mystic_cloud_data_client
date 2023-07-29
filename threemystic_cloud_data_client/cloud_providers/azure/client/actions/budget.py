@@ -218,15 +218,15 @@ class cloud_data_client_azure_client_action(base):
           by_month[by_month_key]["days"][day_key]["resource_group"][f'origional_currency_{total_key}'][cost_data[column_indexs["resourcegroup"]]] = Decimal(0)
           by_month[by_month_key]["days"][day_key]["resource_group"][f'{total_key}'][cost_data[column_indexs["resourcegroup"]]] = Decimal(0)
         
-        if (by_month[by_month_key]["totals"]["resource_group"][f'{total_key}'].get(cost_data[column_indexs["resourcetype"]]) is None or
-            by_month[by_month_key]["totals"]["resource_group"][f'origional_currency_{total_key}'].get(cost_data[column_indexs["resourcetype"]]) is None):
-          by_month[by_month_key]["totals"]["resource_group"][f'origional_currency_{total_key}'][cost_data[column_indexs["resourcetype"]]] = Decimal(0)
-          by_month[by_month_key]["totals"]["resource_group"][f'{total_key}'][cost_data[column_indexs["resourcetype"]]] = Decimal(0)
+        if (by_month[by_month_key]["totals"]["resource_group"][f'{total_key}'].get(cost_data[column_indexs["resourcegroup"]]) is None or
+            by_month[by_month_key]["totals"]["resource_group"][f'origional_currency_{total_key}'].get(cost_data[column_indexs["resourcegroup"]]) is None):
+          by_month[by_month_key]["totals"]["resource_group"][f'origional_currency_{total_key}'][cost_data[column_indexs["resourcegroup"]]] = Decimal(0)
+          by_month[by_month_key]["totals"]["resource_group"][f'{total_key}'][cost_data[column_indexs["resourcegroup"]]] = Decimal(0)
 
         by_month[by_month_key]["days"][day_key]["resource_group"][f'origional_currency_{total_key}'][cost_data[column_indexs["resourcegroup"]]] += Decimal(raw_row_data_cost)
         by_month[by_month_key]["days"][day_key]["resource_group"][f'{total_key}'][cost_data[column_indexs["resourcegroup"]]] += Decimal(row_data_cost)
-        by_month[by_month_key]["totals"]["resource_group"][f'origional_currency_{total_key}'][cost_data[column_indexs["resourcetype"]]] += Decimal(raw_row_data_cost)
-        by_month[by_month_key]["totals"]["resource_group"][f'{total_key}'][cost_data[column_indexs["resourcetype"]]] += Decimal(row_data_cost)
+        by_month[by_month_key]["totals"]["resource_group"][f'origional_currency_{total_key}'][cost_data[column_indexs["resourcegroup"]]] += Decimal(raw_row_data_cost)
+        by_month[by_month_key]["totals"]["resource_group"][f'{total_key}'][cost_data[column_indexs["resourcegroup"]]] += Decimal(row_data_cost)
 
       if column_indexs["resourcetype"] > -1:
         if (by_month[by_month_key]["days"][day_key]["resource_type"][f'{total_key}'].get(cost_data[column_indexs["resourcetype"]]) is None or
@@ -370,6 +370,7 @@ class cloud_data_client_azure_client_action(base):
       "month_to_date": Decimal(0),  
       "month_forecast": Decimal(0),
       "last_seven_days": Decimal(0),
+      "raw_last_14_days": {},
       "last_month": Decimal(0),
     }
 
@@ -389,19 +390,24 @@ class cloud_data_client_azure_client_action(base):
       for i in range(0,9):
         if day_count >= 7:
           break
+        
+        month_key_last14 = self.get_common().helper_type().datetime().datetime_as_string(
+          dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
+          dt_format= "%Y%m"
+        )
         day_key = self.get_common().helper_type().datetime().datetime_as_string(
           dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
           dt_format= "%Y%m%d"
         )
         
 
-        if last14_days[month_key]["days"].get(day_key) is None:
+        if last14_days[month_key_last14]["days"].get(day_key) is None:
           continue
         
         day_count += 1
-        return_data["last_seven_days"] += last14_days[month_key]["days"][day_key]["total"]
+        return_data["last_seven_days"] += last14_days[month_key_last14]["days"][day_key]["total"]
     
-    return_data["raw_last_14_days"] = last14_days
+    return_data["raw_last_14_days"] = last14_days[month_key_last14]["days"]
     
 
     
