@@ -104,7 +104,7 @@ class cloud_data_client_aws_client_action(base):
           'Start': start_date.strftime("%Y-%m-%d"),
           'End': end_date.strftime("%Y-%m-%d"),
         },
-        Granularity='MONTHLY',
+        Granularity='DAILY',
         Metrics=forecast_metric,
         Filter={
           "Dimensions":{
@@ -170,13 +170,13 @@ class cloud_data_client_aws_client_action(base):
         fiscal_start= fiscal_year_start_date, 
         fiscal_end= fiscal_year_end
       ),
-      "last14": await self.__process_get_cost_data_last_fourteendays_resources(
-        year_data= year_data,
-        client= client,
-        account= account,
-        fiscal_start= fiscal_year_start_date, 
-        fiscal_end= fiscal_year_end
-      )
+      # "last14": await self.__process_get_cost_data_last_fourteendays_resources(
+      #   year_data= year_data,
+      #   client= client,
+      #   account= account,
+      #   fiscal_start= fiscal_year_start_date, 
+      #   fiscal_end= fiscal_year_end
+      # )
 
     }
 
