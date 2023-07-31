@@ -165,6 +165,8 @@ class cloud_data_client_aws_client_action(base):
           year_data[forecast_metric][by_month_key] = self.__init_costdata_month(data_dt= data_dt)
         
         if year_data[forecast_metric][by_month_key]["days"].get(day_key) is None:
+          print(cost_data["Total"])
+          print(forecast_metric)
           year_data[forecast_metric][by_month_key]["days"][day_key] = self.__init_costdata_month_day(data_dt= data_dt, currency= cost_data["Total"][forecast_metric]["Unit"])
         
         raw_row_data_cost = (cost_data["Total"][forecast_metric]["Amount"])
