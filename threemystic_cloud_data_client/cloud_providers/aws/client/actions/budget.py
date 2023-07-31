@@ -12,10 +12,6 @@ class cloud_data_client_aws_client_action(base):
   
   async def _process_account_data_region(self, account, region, resource_groups, loop, *args, **kwargs):
     pass
-  
-  def __get_costdata_total_key(self, forecast_metric, *args, **kwargs):
-    if self.get_common().helper_type().string().set_case(string_value= forecast_metric, case= "upper") == "NET_UNBLENDED_COST":
-      return "NetUnblendedCost"
 
   def __init_costdata_month(self, data_dt, *args, **kwargs):
     return {
@@ -66,7 +62,7 @@ class cloud_data_client_aws_client_action(base):
       }
     }
   
-  async def __process_get_cost_data_process_forcast(self, year_data, client, account, start_date, end_date, fiscal_start, fiscal_end, forecast_metrics = ["NET_UNBLENDED_COST"], *args, **kwargs):
+  async def __process_get_cost_data_process_forcast(self, year_data, client, account, start_date, end_date, fiscal_start, fiscal_end, forecast_metrics, *args, **kwargs):
     
     results_by_time_forcast = self.get_cloud_client().general_boto_call_array(
       boto_call=lambda: client.get_cost_and_usage(
@@ -128,7 +124,7 @@ class cloud_data_client_aws_client_action(base):
           year_data[forecast_metric][by_month_key]["totals"][f'fiscal_{total_key}'] += Decimal(row_data_cost)
 
 
-  async def __process_get_cost_data_process_year_data(self, year_data, client, account, start_date, end_date, fiscal_start, fiscal_end, forecast_metrics = ["NET_UNBLENDED_COST"], *args, **kwargs):
+  async def __process_get_cost_data_process_year_data(self, year_data, client, account, start_date, end_date, fiscal_start, fiscal_end, forecast_metrics, *args, **kwargs):
 
     results_by_time = self.get_cloud_client().general_boto_call_array(
       boto_call=lambda: client.get_cost_and_usage(
@@ -169,10 +165,10 @@ class cloud_data_client_aws_client_action(base):
           year_data[forecast_metric][by_month_key] = self.__init_costdata_month(data_dt= data_dt)
         
         if year_data[forecast_metric][by_month_key]["days"].get(day_key) is None:
-          year_data[forecast_metric][by_month_key]["days"][day_key] = self.__init_costdata_month_day(data_dt= data_dt, currency= cost_data["Total"][self.__get_costdata_total_key(forecast_metric= forecast_metric)]["Unit"])
+          year_data[forecast_metric][by_month_key]["days"][day_key] = self.__init_costdata_month_day(data_dt= data_dt, currency= cost_data["Total"][forecast_metric]["Unit"])
         
-        raw_row_data_cost = (cost_data["Total"][self.__get_costdata_total_key(forecast_metric= forecast_metric)]["Amount"])
-        row_data_cost = (cost_data["Total"][self.__get_costdata_total_key(forecast_metric= forecast_metric)]["Amount"])
+        raw_row_data_cost = (cost_data["Total"][forecast_metric]["Amount"])
+        row_data_cost = (cost_data["Total"][forecast_metric]["Amount"])
         
         if year_data[forecast_metric][by_month_key]["days"][day_key]["currency"] != year_data[forecast_metric][by_month_key]["days"][day_key]["origional_currency"]:
           row_data_cost = self.get_common().helper_currency().convert(
@@ -195,13 +191,13 @@ class cloud_data_client_aws_client_action(base):
           year_data[forecast_metric][by_month_key]["totals"][f'fiscal_{total_key}'] += Decimal(row_data_cost)
 
         for cost_data_group in cost_data["Groups"]:
-          raw_row_data_cost_group = cost_data_group["Metrics"][self.__get_costdata_total_key(forecast_metric= forecast_metric)]["Amount"]
+          raw_row_data_cost_group = cost_data_group["Metrics"][forecast_metric]["Amount"]
           row_data_cost_group = raw_row_data_cost_group
           
-          if year_data[forecast_metric][by_month_key]["days"][day_key]["currency"] != cost_data_group["Metrics"][self.__get_costdata_total_key(forecast_metric= forecast_metric)]["Unit"]:
+          if year_data[forecast_metric][by_month_key]["days"][day_key]["currency"] != cost_data_group["Metrics"][forecast_metric]["Unit"]:
             row_data_cost_group = self.get_common().helper_currency().convert(
               ammount= row_data_cost_group,
-              currency_from= cost_data_group["Metrics"][self.__get_costdata_total_key(forecast_metric= forecast_metric)]["Unit"],
+              currency_from= cost_data_group["Metrics"][forecast_metric]["Unit"],
               currency_to= year_data[forecast_metric][by_month_key]["days"][day_key]["currency"],
               conversion_date= self.get_common().helper_type().datetime().yesterday(dt=self.get_common().helper_type().datetime().datetime_from_string(
                 dt_string= self.get_common().helper_type().datetime().datetime_as_string(
@@ -249,7 +245,7 @@ class cloud_data_client_aws_client_action(base):
     
 
     year_data = {}
-    forcast_metric = "NET_UNBLENDED_COST"
+    forcast_metric = "NetUnblendedCost"
     await self.__process_get_cost_data_process_year_data(
       year_data= year_data,
       client= client,
