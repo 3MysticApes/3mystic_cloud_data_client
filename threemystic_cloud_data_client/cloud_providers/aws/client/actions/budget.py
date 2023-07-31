@@ -339,14 +339,14 @@ class cloud_data_client_aws_client_action(base):
   
     return {
       "account": account,
-      "data": [ self.get_common().helper_type().dictionary().merge_dictionary([
-        {},
-        await self.get_base_return_data(
-          account= account,
-          resource_id =  f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
-        ),
-        await self.__process_get_cost_data(account= account, client= client, loop= loop, *args, **kwargs)
-      ])]
+      "data": [ ] # self.get_common().helper_type().dictionary().merge_dictionary([
+      #   {},
+      #   await self.get_base_return_data(
+      #     account= account,
+      #     resource_id =  f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
+      #   ),
+      #   await self.__process_get_cost_data(account= account, client= client, loop= loop, *args, **kwargs)
+      # ])]
     }
 
   
