@@ -75,6 +75,13 @@ class cloud_data_client_provider_base_client(base):
   
   def get_data_only_parser_args_actions(self, *args, **kwargs):
     return {
+      "--certificates,--ssl": {
+        "default": None, 
+        "const": "certificates",
+        "dest": "data_action",
+        "help": "Data Action: This pulls Certificats information from services like acm/keyvault",
+        "action": 'store_const'
+      },
       "--dns": {
         "default": None, 
         "const": "dns",
