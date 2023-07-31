@@ -165,8 +165,8 @@ class cloud_data_client_aws_client_action(base):
           year_data[forecast_metric][by_month_key] = self.__init_costdata_month(data_dt= data_dt)
         
         if year_data[forecast_metric][by_month_key]["days"].get(day_key) is None:
-          print(cost_data["Total"])
-          print(forecast_metric)
+          year_data[forecast_metric][by_month_key]["days"][day_key] = cost_data
+          return 
           year_data[forecast_metric][by_month_key]["days"][day_key] = self.__init_costdata_month_day(data_dt= data_dt, currency= cost_data["Total"][forecast_metric]["Unit"])
         
         raw_row_data_cost = (cost_data["Total"][forecast_metric]["Amount"])
@@ -258,6 +258,7 @@ class cloud_data_client_aws_client_action(base):
       fiscal_end= fiscal_year_end,
       forecast_metrics = [forcast_metric]
     )
+    return year_data
 
     await self.__process_get_cost_data_process_forcast(
       year_data= year_data,
@@ -339,14 +340,14 @@ class cloud_data_client_aws_client_action(base):
   
     return {
       "account": account,
-      "data": [ ] # self.get_common().helper_type().dictionary().merge_dictionary([
-      #   {},
-      #   await self.get_base_return_data(
-      #     account= account,
-      #     resource_id =  f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
-      #   ),
-      #   await self.__process_get_cost_data(account= account, client= client, loop= loop, *args, **kwargs)
-      # ])]
+      "data": [ self.get_common().helper_type().dictionary().merge_dictionary([
+        {},
+        await self.get_base_return_data(
+          account= account,
+          resource_id =  f'{self.get_cloud_client().get_account_prefix()}{self.get_cloud_client().get_account_id(account= account)}',
+        ),
+        await self.__process_get_cost_data(account= account, client= client, loop= loop, *args, **kwargs)
+      ])]
     }
 
   
