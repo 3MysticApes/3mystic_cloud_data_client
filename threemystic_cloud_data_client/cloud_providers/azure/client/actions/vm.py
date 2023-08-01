@@ -213,7 +213,7 @@ class cloud_data_client_azure_client_action(base):
     return None
   async def _process_account_data(self, account, loop, *args, **kwargs):
     client = ComputeManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
-
+    
     public_ips = await self.__process_get_resources_vm_public_ips(account= account)
     tasks = {
         "resource": loop.create_task(self.__process_get_resources_vm(account= account)),

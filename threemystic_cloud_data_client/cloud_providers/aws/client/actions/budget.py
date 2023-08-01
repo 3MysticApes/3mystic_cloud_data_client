@@ -62,52 +62,53 @@ class cloud_data_client_aws_client_action(base):
       }
     }
   
-  async def __process_get_cost_data_process_forcast(self, year_data, client, account, start_date, end_date, fiscal_start, fiscal_end, forecast_metrics, *args, **kwargs):
+  async def __process_get_cost_data_process_forcast(self, year_data, client, account, start_date, end_date, fiscal_start, fiscal_end, cost_metrics, *args, **kwargs):
     
-    results_by_time_forcast = self.get_cloud_client().general_boto_call_array(
-      boto_call=lambda: client.get_cost_and_usage(
-        TimePeriod={
-          'Start': start_date.strftime("%Y-%m-%d"),
-          'End': end_date.strftime("%Y-%m-%d"),
-        },
-        Granularity='DAILY',
-        Metrics=forecast_metrics,
-        Filter={
-          "Dimensions":{
-            "Key":"LINKED_ACCOUNT",
-            "Values":[self.get_cloud_client().get_account_id(account= account)]
-          }
-        },
-      ),
-      boto_params= None,
-      boto_nextkey = None,
-      boto_key= None
-    )
+    for cost_metric in cost_metrics:
+      results_by_time_forcast = self.get_cloud_client().general_boto_call_array(
+        boto_call=lambda: client.get_cost_forecast(
+          TimePeriod={
+            'Start': start_date.strftime("%Y-%m-%d"),
+            'End': end_date.strftime("%Y-%m-%d"),
+          },
+          Granularity='DAILY',
+          Metric=cost_metric,
+          Filter={
+            "Dimensions":{
+              "Key":"LINKED_ACCOUNT",
+              "Values":[self.get_cloud_client().get_account_id(account= account)]
+            }
+          },
+        ),
+        boto_params= None,
+        boto_nextkey = None,
+        boto_key= None
+      )
+      
+      total_key = "forcast_total"
+      currency = results_by_time_forcast["Total"]["Unit"]
     
-    total_key = "forcast_total"
-    currency = results_by_time_forcast["Total"]["Unit"]
     
-    for forecast_metric in forecast_metrics:
-      year_data[forecast_metric] = {}
+      year_data[cost_metric] = {}
       for cost_data in results_by_time_forcast["ForecastResultsByTime"]:
         data_dt = self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(cost_data["TimePeriod"]["Start"]), dt_format= "%Y-%m-%d")
         by_month_key = self.get_common().helper_type().datetime().datetime_as_string(dt_format= "%Y%m", dt= data_dt)
 
         day_key = self.get_common().helper_type().datetime().datetime_as_string(dt_format= "%Y%m%d", dt= data_dt)
         if year_data.get(by_month_key) is None:
-          year_data[forecast_metric][by_month_key] = self.__init_costdata_month(data_dt= data_dt)
+          year_data[cost_metric][by_month_key] = self.__init_costdata_month(data_dt= data_dt)
         
-        if year_data[forecast_metric][by_month_key]["days"].get(day_key) is None:
-          year_data[forecast_metric][by_month_key]["days"][day_key] = self.__init_costdata_month_day(data_dt= data_dt, currency= currency)
+        if year_data[cost_metric][by_month_key]["days"].get(day_key) is None:
+          year_data[cost_metric][by_month_key]["days"][day_key] = self.__init_costdata_month_day(data_dt= data_dt, currency= currency)
         
         raw_row_data_cost = (cost_data["MeanValue"])
         row_data_cost = (cost_data["MeanValue"])
         
-        if year_data[forecast_metric][by_month_key]["days"][day_key]["currency"] != year_data[forecast_metric][by_month_key]["days"][day_key]["origional_currency"]:
+        if year_data[cost_metric][by_month_key]["days"][day_key]["currency"] != year_data[cost_metric][by_month_key]["days"][day_key]["origional_currency"]:
           row_data_cost = self.get_common().helper_currency().convert(
             ammount= row_data_cost,
             currency_from= currency,
-            currency_to= year_data[forecast_metric][by_month_key]["days"][day_key]["currency"],
+            currency_to= year_data[cost_metric][by_month_key]["days"][day_key]["currency"],
             conversion_date= self.get_common().helper_type().datetime().yesterday(dt=self.get_common().helper_type().datetime().datetime_from_string(
               dt_string= self.get_common().helper_type().datetime().datetime_as_string(
                 dt= data_dt,
@@ -117,14 +118,32 @@ class cloud_data_client_aws_client_action(base):
             )).date()
           )
 
-        year_data[forecast_metric][by_month_key]["days"][day_key][f'origional_currency_{total_key}'] += Decimal(raw_row_data_cost)
-        year_data[forecast_metric][by_month_key]["days"][day_key][f'{total_key}'] += Decimal(row_data_cost)
-        year_data[forecast_metric][by_month_key]["totals"][f'{total_key}'] += Decimal(row_data_cost)
+        year_data[cost_metric][by_month_key]["days"][day_key][f'origional_currency_{total_key}'] += Decimal(raw_row_data_cost)
+        year_data[cost_metric][by_month_key]["days"][day_key][f'{total_key}'] += Decimal(row_data_cost)
+        year_data[cost_metric][by_month_key]["totals"][f'{total_key}'] += Decimal(row_data_cost)
         if data_dt >= fiscal_start and data_dt <= fiscal_end:
-          year_data[forecast_metric][by_month_key]["totals"][f'fiscal_{total_key}'] += Decimal(row_data_cost)
+          year_data[cost_metric][by_month_key]["totals"][f'fiscal_{total_key}'] += Decimal(row_data_cost)
 
-
-  async def __process_get_cost_data_process_year_data(self, year_data, client, account, start_date, end_date, fiscal_start, fiscal_end, forecast_metrics, *args, **kwargs):
+  def get_total_cost_data(self, cost_data, cost_metric, *args, **kwargs):
+    if cost_data["Total"].get(cost_metric) is not None:
+      if cost_data["Total"][cost_metric].get("Unit") is not None:
+        return cost_data["Total"][cost_metric]["Unit"]
+    
+    return 0
+      
+  def get_currency_cost_data(self, cost_data, cost_metric, *args, **kwargs):
+    if cost_data["Total"].get(cost_metric) is not None:
+      if cost_data["Total"][cost_metric].get("Unit") is not None:
+        return cost_data["Total"][cost_metric]["Unit"]
+    
+    if len(cost_data["Groups"]) > 0:
+      if cost_data["Groups"][0]["Metrics"].get(cost_metric) is not None:
+        if cost_data["Groups"][0]["Metrics"][cost_metric].get("Unit") is not None:
+          return cost_data["Groups"][0]["Metrics"][cost_metric]["Unit"]
+        
+    return self.get_cloud_data_client().get_default_currency()
+      
+  async def __process_get_cost_data_process_year_data(self, year_data, client, account, start_date, end_date, fiscal_start, fiscal_end, cost_metrics, *args, **kwargs):
 
     results_by_time = self.get_cloud_client().general_boto_call_array(
       boto_call=lambda: client.get_cost_and_usage(
@@ -133,7 +152,7 @@ class cloud_data_client_aws_client_action(base):
           'End': end_date.strftime("%Y-%m-%d"),
         },
         Granularity='DAILY',
-        Metrics=forecast_metrics,
+        Metrics=cost_metrics,
         Filter={
           "Dimensions":{
             "Key":"LINKED_ACCOUNT",
@@ -154,53 +173,34 @@ class cloud_data_client_aws_client_action(base):
     )
     
     total_key = "total"
-    for forecast_metric in forecast_metrics:
-      year_data[forecast_metric] = {}
+    for cost_metric in cost_metrics:
+      year_data[cost_metric] = {}
       for cost_data in results_by_time:
         data_dt = self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(cost_data["TimePeriod"]["Start"]), dt_format= "%Y-%m-%d")
         by_month_key = self.get_common().helper_type().datetime().datetime_as_string(dt_format= "%Y%m", dt= data_dt)
 
         day_key = self.get_common().helper_type().datetime().datetime_as_string(dt_format= "%Y%m%d", dt= data_dt)
-        if year_data[forecast_metric].get(by_month_key) is None:
-          year_data[forecast_metric][by_month_key] = self.__init_costdata_month(data_dt= data_dt)
+        if year_data[cost_metric].get(by_month_key) is None:
+          year_data[cost_metric][by_month_key] = self.__init_costdata_month(data_dt= data_dt)
         
-        if year_data[forecast_metric][by_month_key]["days"].get(day_key) is None:
-          year_data[forecast_metric][by_month_key]["days"][day_key] = cost_data
-          return 
-          year_data[forecast_metric][by_month_key]["days"][day_key] = self.__init_costdata_month_day(data_dt= data_dt, currency= cost_data["Total"][forecast_metric]["Unit"])
-        
-        raw_row_data_cost = (cost_data["Total"][forecast_metric]["Amount"])
-        row_data_cost = (cost_data["Total"][forecast_metric]["Amount"])
-        
-        if year_data[forecast_metric][by_month_key]["days"][day_key]["currency"] != year_data[forecast_metric][by_month_key]["days"][day_key]["origional_currency"]:
-          row_data_cost = self.get_common().helper_currency().convert(
-            ammount= row_data_cost,
-            currency_from= year_data[forecast_metric][by_month_key]["days"][day_key]["origional_currency"],
-            currency_to= year_data[forecast_metric][by_month_key]["days"][day_key]["currency"],
-            conversion_date= self.get_common().helper_type().datetime().yesterday(dt=self.get_common().helper_type().datetime().datetime_from_string(
-              dt_string= self.get_common().helper_type().datetime().datetime_as_string(
-                dt= data_dt,
-                dt_format= "%Y%m01"
-              ),
-              dt_format= "%Y%m%d"
-            )).date()
-          )
+        if year_data[cost_metric][by_month_key]["days"].get(day_key) is None:
+          year_data[cost_metric][by_month_key]["days"][day_key] = self.__init_costdata_month_day(data_dt= data_dt, currency= self.get_currency_cost_data(cost_data= cost_data, cost_metric= cost_metric))
 
-        year_data[forecast_metric][by_month_key]["days"][day_key][f'origional_currency_{total_key}'] += Decimal(raw_row_data_cost)
-        year_data[forecast_metric][by_month_key]["days"][day_key][f'{total_key}'] += Decimal(row_data_cost)
-        year_data[forecast_metric][by_month_key]["totals"][f'{total_key}'] += Decimal(row_data_cost)
-        if data_dt >= fiscal_start and data_dt <= fiscal_end:
-          year_data[forecast_metric][by_month_key]["totals"][f'fiscal_{total_key}'] += Decimal(row_data_cost)
+        raw_row_data_cost = self.get_total_cost_data(cost_data= cost_data, cost_metric= cost_metric)
+        total_attribute_empty = False if raw_row_data_cost > 0 else True
 
         for cost_data_group in cost_data["Groups"]:
-          raw_row_data_cost_group = cost_data_group["Metrics"][forecast_metric]["Amount"]
+          raw_row_data_cost_group = cost_data_group["Metrics"][cost_metric]["Amount"]
           row_data_cost_group = raw_row_data_cost_group
+
+          if total_attribute_empty:
+            raw_row_data_cost += raw_row_data_cost_group
           
-          if year_data[forecast_metric][by_month_key]["days"][day_key]["currency"] != cost_data_group["Metrics"][forecast_metric]["Unit"]:
+          if year_data[cost_metric][by_month_key]["days"][day_key]["currency"] != cost_data_group["Metrics"][cost_metric]["Unit"]:
             row_data_cost_group = self.get_common().helper_currency().convert(
               ammount= row_data_cost_group,
-              currency_from= cost_data_group["Metrics"][forecast_metric]["Unit"],
-              currency_to= year_data[forecast_metric][by_month_key]["days"][day_key]["currency"],
+              currency_from= cost_data_group["Metrics"][cost_metric]["Unit"],
+              currency_to= year_data[cost_metric][by_month_key]["days"][day_key]["currency"],
               conversion_date= self.get_common().helper_type().datetime().yesterday(dt=self.get_common().helper_type().datetime().datetime_from_string(
                 dt_string= self.get_common().helper_type().datetime().datetime_as_string(
                   dt= data_dt,
@@ -210,20 +210,42 @@ class cloud_data_client_aws_client_action(base):
               )).date()
             )
           for cost_data_group_key in cost_data_group["Keys"]:
-            if (year_data[forecast_metric][by_month_key]["days"][day_key]["resource_type"][f'{total_key}'].get(cost_data_group_key) is None or
-                year_data[forecast_metric][by_month_key]["days"][day_key]["resource_type"][f'origional_currency_{total_key}'].get(cost_data_group_key) is None):
-              year_data[forecast_metric][by_month_key]["days"][day_key]["resource_type"][f'origional_currency_{total_key}'][cost_data_group_key] = Decimal(0)
-              year_data[forecast_metric][by_month_key]["days"][day_key]["resource_type"][f'{total_key}'][cost_data_group_key] = Decimal(0)
+            if (year_data[cost_metric][by_month_key]["days"][day_key]["resource_type"][f'{total_key}'].get(cost_data_group_key) is None or
+                year_data[cost_metric][by_month_key]["days"][day_key]["resource_type"][f'origional_currency_{total_key}'].get(cost_data_group_key) is None):
+              year_data[cost_metric][by_month_key]["days"][day_key]["resource_type"][f'origional_currency_{total_key}'][cost_data_group_key] = Decimal(0)
+              year_data[cost_metric][by_month_key]["days"][day_key]["resource_type"][f'{total_key}'][cost_data_group_key] = Decimal(0)
             
-            if (year_data[forecast_metric][by_month_key]["totals"]["resource_type"][f'{total_key}'].get(cost_data_group_key) is None or
-                year_data[forecast_metric][by_month_key]["totals"]["resource_type"][f'origional_currency_{total_key}'].get(cost_data_group_key) is None):
-              year_data[forecast_metric][by_month_key]["totals"]["resource_type"][f'origional_currency_{total_key}'][cost_data_group_key] = Decimal(0)
-              year_data[forecast_metric][by_month_key]["totals"]["resource_type"][f'{total_key}'][cost_data_group_key] = Decimal(0)
+            if (year_data[cost_metric][by_month_key]["totals"]["resource_type"][f'{total_key}'].get(cost_data_group_key) is None or
+                year_data[cost_metric][by_month_key]["totals"]["resource_type"][f'origional_currency_{total_key}'].get(cost_data_group_key) is None):
+              year_data[cost_metric][by_month_key]["totals"]["resource_type"][f'origional_currency_{total_key}'][cost_data_group_key] = Decimal(0)
+              year_data[cost_metric][by_month_key]["totals"]["resource_type"][f'{total_key}'][cost_data_group_key] = Decimal(0)
 
-            year_data[forecast_metric][by_month_key]["days"][day_key]["resource_type"][f'origional_currency_{total_key}'][cost_data_group_key] += Decimal(raw_row_data_cost_group)
-            year_data[forecast_metric][by_month_key]["days"][day_key]["resource_type"][f'{total_key}'][cost_data_group_key] += Decimal(row_data_cost_group)
-            year_data[forecast_metric][by_month_key]["totals"]["resource_type"][f'origional_currency_{total_key}'][cost_data_group_key] += Decimal(raw_row_data_cost_group)
-            year_data[forecast_metric][by_month_key]["totals"]["resource_type"][f'{total_key}'][cost_data_group_key] += Decimal(row_data_cost_group)
+            year_data[cost_metric][by_month_key]["days"][day_key]["resource_type"][f'origional_currency_{total_key}'][cost_data_group_key] += Decimal(raw_row_data_cost_group)
+            year_data[cost_metric][by_month_key]["days"][day_key]["resource_type"][f'{total_key}'][cost_data_group_key] += Decimal(row_data_cost_group)
+            year_data[cost_metric][by_month_key]["totals"]["resource_type"][f'origional_currency_{total_key}'][cost_data_group_key] += Decimal(raw_row_data_cost_group)
+            year_data[cost_metric][by_month_key]["totals"]["resource_type"][f'{total_key}'][cost_data_group_key] += Decimal(row_data_cost_group)
+        
+        row_data_cost = raw_row_data_cost
+        
+        if year_data[cost_metric][by_month_key]["days"][day_key]["currency"] != year_data[cost_metric][by_month_key]["days"][day_key]["origional_currency"]:
+          row_data_cost = self.get_common().helper_currency().convert(
+            ammount= row_data_cost,
+            currency_from= year_data[cost_metric][by_month_key]["days"][day_key]["origional_currency"],
+            currency_to= year_data[cost_metric][by_month_key]["days"][day_key]["currency"],
+            conversion_date= self.get_common().helper_type().datetime().yesterday(dt=self.get_common().helper_type().datetime().datetime_from_string(
+              dt_string= self.get_common().helper_type().datetime().datetime_as_string(
+                dt= data_dt,
+                dt_format= "%Y%m01"
+              ),
+              dt_format= "%Y%m%d"
+            )).date()
+          )
+
+        year_data[cost_metric][by_month_key]["days"][day_key][f'origional_currency_{total_key}'] += Decimal(raw_row_data_cost)
+        year_data[cost_metric][by_month_key]["days"][day_key][f'{total_key}'] += Decimal(row_data_cost)
+        year_data[cost_metric][by_month_key]["totals"][f'{total_key}'] += Decimal(row_data_cost)
+        if data_dt >= fiscal_start and data_dt <= fiscal_end:
+          year_data[cost_metric][by_month_key]["totals"][f'fiscal_{total_key}'] += Decimal(row_data_cost)
 
 
   async def __process_get_cost_data(self, account, client, fiscal_year_start, loop, *args, **kwargs):
@@ -247,7 +269,7 @@ class cloud_data_client_aws_client_action(base):
     
 
     year_data = {}
-    forcast_metric = "NetUnblendedCost"
+    cost_metric = "NetUnblendedCost"
     await self.__process_get_cost_data_process_year_data(
       year_data= year_data,
       client= client,
@@ -256,20 +278,20 @@ class cloud_data_client_aws_client_action(base):
       end_date= self.get_data_start() if forecast_end > self.get_data_start() else forecast_end,
       fiscal_start= fiscal_year_start_date, 
       fiscal_end= fiscal_year_end,
-      forecast_metrics = [forcast_metric]
+      cost_metrics = [cost_metric]
     )
-    return year_data
 
-    await self.__process_get_cost_data_process_forcast(
-      year_data= year_data,
-      client= client,
-      account= account,
-      start_date= start_date,
-      end_date= self.get_data_start() if forecast_end > self.get_data_start() else forecast_end,
-      fiscal_start= fiscal_year_start_date, 
-      fiscal_end= fiscal_year_end,
-      forecast_metrics = [forcast_metric]
-    )
+    if forecast_end > self.get_data_start():
+      await self.__process_get_cost_data_process_forcast(
+        year_data= year_data,
+        client= client,
+        account= account,
+        start_date= self.get_data_start(),
+        end_date= forecast_end,
+        fiscal_start= fiscal_year_start_date, 
+        fiscal_end= fiscal_year_end,
+        cost_metrics = [cost_metric]
+      )
 
     month_key = self.get_common().helper_type().datetime().datetime_as_string(
       dt= self.get_data_start(),
@@ -281,6 +303,7 @@ class cloud_data_client_aws_client_action(base):
     )
     
     return_data = {
+      "cost_metric": cost_metric,
       "year_to_date": Decimal(0),  
       "year_forecast": Decimal(0),
       "fiscal_year_to_date": Decimal(0),  
