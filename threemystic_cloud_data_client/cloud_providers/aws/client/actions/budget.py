@@ -15,7 +15,7 @@ class cloud_data_client_aws_client_action(base):
 
   def __init_costdata_month(self, data_dt, *args, **kwargs):
     return {
-      "currency": self.get_common().helper_type().string().set_case(self.get_cloud_data_client().get_default_currency(), case= "upper"),
+      "currency": self.get_common().helper_type().string().set_case(string_value= self.get_cloud_data_client().get_default_currency(), case= "upper"),
       "month": data_dt.month,
       "year": data_dt.year,
       "totals":{
@@ -41,7 +41,7 @@ class cloud_data_client_aws_client_action(base):
   
   def __init_costdata_month_day(self, data_dt, currency, *args, **kwargs):
     return {
-      "currency": self.get_common().helper_type().string().set_case(self.get_cloud_data_client().get_default_currency(), case= "upper"),
+      "currency": self.get_common().helper_type().string().set_case(string_value= self.get_cloud_data_client().get_default_currency(), case= "upper"),
       "origional_currency": self.get_common().helper_type().string().set_case(string_value= currency, case= "upper"),
       "date": data_dt,
       "total": Decimal(0),
@@ -62,6 +62,31 @@ class cloud_data_client_aws_client_action(base):
       }
     }
   
+  def __convert_costmetric_forecast_metric(self, cost_metric, *args, **kwargs):
+    if self.get_common().helper_type().string().set_case(string_value= cost_metric, case= "lower") == "netunblendedcost":
+      return "NET_UNBLENDED_COST"
+    
+    if self.get_common().helper_type().string().set_case(string_value= cost_metric, case= "lower") == "blendedcost":
+      return "BLENDED_COST"
+    
+    if self.get_common().helper_type().string().set_case(string_value= cost_metric, case= "lower") == "unblendedcost":
+      return "UNBLENDED_COST"
+    
+    if self.get_common().helper_type().string().set_case(string_value= cost_metric, case= "lower") == "amortizedcost":
+      return "AMORTIZED_COST"
+    
+    if self.get_common().helper_type().string().set_case(string_value= cost_metric, case= "lower") == "netamortizedcost":
+      return "NET_AMORTIZED_COST"
+    
+    if self.get_common().helper_type().string().set_case(string_value= cost_metric, case= "lower") == "usagequantity":
+      return "USAGE_QUANTITY"
+    
+    if self.get_common().helper_type().string().set_case(string_value= cost_metric, case= "lower") == "normalizedusageamount":
+      return "NORMALIZED_USAGE_AMOUNT"
+    
+    return cost_metric
+
+
   async def __process_get_cost_data_process_forcast(self, year_data, client, account, start_date, end_date, fiscal_start, fiscal_end, cost_metrics, *args, **kwargs):
     
     for cost_metric in cost_metrics:
@@ -72,7 +97,7 @@ class cloud_data_client_aws_client_action(base):
             'End': end_date.strftime("%Y-%m-%d"),
           },
           Granularity='DAILY',
-          Metric=cost_metric,
+          Metric=self.__convert_costmetric_forecast_metric(cost_metric= cost_metric),
           Filter={
             "Dimensions":{
               "Key":"LINKED_ACCOUNT",
@@ -326,18 +351,18 @@ class cloud_data_client_aws_client_action(base):
         dt_format= "%Y%m%d"
       )
 
-      if year_data[forcast_metric][month_key_last14]["days"].get(day_key) is None:
+      if year_data[cost_metric][month_key_last14]["days"].get(day_key) is None:
         continue
       
-      return_data["raw_last_14_days"][day_key] = year_data[forcast_metric][month_key_last14]["days"].get(day_key)
+      return_data["raw_last_14_days"][day_key] = year_data[cost_metric][month_key_last14]["days"].get(day_key)
 
       if day_count >= 7:
         continue
 
       day_count += 1
-      return_data["last_seven_days"] += year_data[forcast_metric][month_key_last14]["days"][day_key]["total"]
+      return_data["last_seven_days"] += year_data[cost_metric][month_key_last14]["days"][day_key]["total"]
       
-    for data in year_data[forcast_metric].values():
+    for data in year_data[cost_metric].values():
       return_data["fiscal_year_to_date"] += data["totals"].get("fiscal_total")
       return_data["fiscal_year_forecast"] += (data["totals"].get("fiscal_total") + data["totals"].get("fiscal_forcast_total"))
       if data["year"] == self.get_data_start().year:
@@ -345,12 +370,12 @@ class cloud_data_client_aws_client_action(base):
         return_data["year_forecast"] += (data["totals"].get("total") + data["totals"].get("forcast_total"))
 
     
-    if year_data[forcast_metric].get(month_key) is not None:
-      return_data["month_to_date"] = year_data[forcast_metric][month_key]["totals"]["total"]
-      return_data["month_forecast"] = year_data[forcast_metric][month_key]["totals"]["total"] + year_data[forcast_metric][month_key]["totals"]["forcast_total"]
+    if year_data[cost_metric].get(month_key) is not None:
+      return_data["month_to_date"] = year_data[cost_metric][month_key]["totals"]["total"]
+      return_data["month_forecast"] = year_data[cost_metric][month_key]["totals"]["total"] + year_data[cost_metric][month_key]["totals"]["forcast_total"]
     
-    if year_data[forcast_metric].get(last_month_key) is not None:
-      return_data["last_month"] = year_data[forcast_metric][last_month_key]["totals"]["total"]
+    if year_data[cost_metric].get(last_month_key) is not None:
+      return_data["last_month"] = year_data[cost_metric][last_month_key]["totals"]["total"]
   
     return return_data
 
