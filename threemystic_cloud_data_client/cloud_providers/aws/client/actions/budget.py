@@ -95,7 +95,7 @@ class cloud_data_client_aws_client_action(base):
       
       while start_date < end_date:
         adjusted_enddated = (start_date + self.get_common().helper_type().datetime().time_delta(months= 4, dt= start_date))
-        start_date += self.get_common().helper_type().datetime().time_delta(months= 4, dt= start_date)
+        
         
         results_by_time_forcast = self.get_cloud_client().general_boto_call_array(
           boto_call=lambda: client.get_cost_forecast(
@@ -117,6 +117,7 @@ class cloud_data_client_aws_client_action(base):
           boto_key= None
         )
         
+        start_date += self.get_common().helper_type().datetime().time_delta(months= 4, dt= start_date)
         total_key = "forcast_total"
         currency = results_by_time_forcast["Total"]["Unit"]
       
