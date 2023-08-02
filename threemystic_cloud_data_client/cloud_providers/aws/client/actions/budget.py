@@ -126,10 +126,10 @@ class cloud_data_client_aws_client_action(base):
 
   def get_total_cost_data(self, cost_data, cost_metric, *args, **kwargs):
     if cost_data["Total"].get(cost_metric) is not None:
-      if cost_data["Total"][cost_metric].get("Unit") is not None:
-        return cost_data["Total"][cost_metric]["Unit"]
+      if cost_data["Total"][cost_metric].get("Amount") is not None:
+        return Decimal(cost_data["Total"][cost_metric]["Amount"])
     
-    return 0
+    return Decimal(0)
       
   def get_currency_cost_data(self, cost_data, cost_metric, *args, **kwargs):
     if cost_data["Total"].get(cost_metric) is not None:
@@ -190,7 +190,7 @@ class cloud_data_client_aws_client_action(base):
         total_attribute_empty = False if raw_row_data_cost > 0 else True
 
         for cost_data_group in cost_data["Groups"]:
-          raw_row_data_cost_group = cost_data_group["Metrics"][cost_metric]["Amount"]
+          raw_row_data_cost_group = Decimal(cost_data_group["Metrics"][cost_metric]["Amount"])
           row_data_cost_group = raw_row_data_cost_group
 
           if total_attribute_empty:
