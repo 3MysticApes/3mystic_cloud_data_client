@@ -64,7 +64,7 @@ class cloud_data_client_aws_client_action(base):
           {},
           {
             "extra_tags": await self.__acm_certificates_tags(client= client, account= account, region= region, certificate_arn= item[self.data_id_name])
-          }, 
+          },
           item
         ]) for item in tasks["main"].result()
         ]

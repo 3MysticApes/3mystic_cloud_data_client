@@ -3,6 +3,9 @@ from threemystic_cloud_data_client.cloud_providers.base_class.base_client import
 class cloud_data_client_azure_client(base):
   def __init__(self, *args, **kwargs):
     super().__init__(provider= "azure", logger_name= "cloud_data_client_azure_client", *args, **kwargs)
+
+  def get_client_parser_args_actions(self, *args, **kwargs):
+    return {}
     
     
   

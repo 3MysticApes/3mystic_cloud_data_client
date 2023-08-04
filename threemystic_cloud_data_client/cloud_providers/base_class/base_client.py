@@ -25,9 +25,11 @@ class cloud_data_client_provider_base_client(base):
     self._set_arguments_from_parameters(force_action_arguments= force_action_arguments, *args, **kwargs)
     
     self._set_data_action()
+  
+  def get_client_parser_args_actions(self, *args, **kwargs):
+    return {}
 
-  @classmethod
-  def get_default_parser_args_actions(cls, *args, **kwargs):
+  def get_default_parser_args_actions(self, *args, **kwargs):
     return {
       "--cloudstorage": {
         "default": None, 
@@ -70,11 +72,7 @@ class cloud_data_client_provider_base_client(base):
         "dest": "data_action",
         "help": "Data Action: This pulls either ASG or VMSS depending on the provider",
         "action": 'store_const'
-      }
-    }
-  
-  def get_data_only_parser_args_actions(self, *args, **kwargs):
-    return {
+      },
       "--certificates,--ssl": {
         "default": None, 
         "const": "certificates",
@@ -103,11 +101,18 @@ class cloud_data_client_provider_base_client(base):
         "help": "Data Action: This pulls the various non-inmemory databses",
         "action": 'store_const'
       },
+      "--clouddb,--clouddatabase,--cdb": {
+        "default": None, 
+        "const": "clouddb",
+        "dest": "data_action",
+        "help": "Data Action: This pulls the special cloud DB ie Azure/CosmosDB, AWS/DynamoDB",
+        "action": 'store_const'
+      },
       "--memorydb": {
         "default": None, 
         "const": "memorydb",
         "dest": "data_action",
-        "help": "Data Action: This pulls memorydbs IE Redis",
+        "help": "Data Action: This pulls memorydbs IE Redis/elasticache",
         "action": 'store_const'
       },
       "--vmimage": {
@@ -149,7 +154,7 @@ class cloud_data_client_provider_base_client(base):
         }
       },
       self.get_default_parser_args_actions(),
-      self.get_data_only_parser_args_actions()
+      self.get_client_parser_args_actions()
     ])
     return self.get_parser_args()
   

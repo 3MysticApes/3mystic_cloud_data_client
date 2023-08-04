@@ -189,37 +189,11 @@ class cloud_data_client_azure_client_action(base):
         }
       )
       return []
-
-  async def __process_get_db_cosmosdb(self, client, account, *args, **kwargs):    
-    try:
-      # I need to look into this more but the cassandra clusters list seems to be standalone
-      # client.cassandra_clusters.list_by_subscription
-      return_data = []
-      for db in self.get_cloud_client().sdk_request(
-        tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True), 
-        lambda_sdk_command=lambda: client.database_accounts.list()
-        ):
-        return_data.append(
-          {"extra":{
-            "extra_dbtype": "cosmosdb"
-          }, "resource": db 
-        }) 
-      
-      return return_data
-    except Exception as err:
-      self.get_common().get_logger().exception(
-        msg= f"__process_get_db_cosmos: {err}",
-        extra={
-          "exception": err
-        }
-      )
-      return []
     
   async def _process_account_data(self, account, loop, *args, **kwargs):
     # database categories
     # https://azure.microsoft.com/en-us/products/category/databases/
 
-    cosmosdb_client = CosmosDBManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     sql_client = SqlManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     sqlvm_client = SqlVirtualMachineManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
     mysql_client = MySQLManagementClient(credential= self.get_cloud_client().get_tenant_credential(tenant= self.get_cloud_client().get_tenant_id(tenant= account, is_account= True)), subscription_id= self.get_cloud_client().get_account_id(account= account))
@@ -228,7 +202,6 @@ class cloud_data_client_azure_client_action(base):
     for test in sql_client.servers.list( ):
       test.ta
     tasks = {
-       "cosmosdb_client": loop.create_task(self.__process_get_db_cosmosdb(client= cosmosdb_client,account= account)),
        "sql_client": loop.create_task(self.__process_get_db_sql(client= sql_client,account= account)),
        "sqlvm_client": loop.create_task(self.__process_get_db_sqlvm(client= sqlvm_client,account= account)),
        "mysql_client": loop.create_task(self.__process_get_db_mysql(client= mysql_client,account= account)),

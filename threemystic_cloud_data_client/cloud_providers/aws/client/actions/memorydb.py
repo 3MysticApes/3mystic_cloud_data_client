@@ -2,6 +2,7 @@
 from threemystic_cloud_data_client.cloud_providers.aws.client.actions.base_class.base import cloud_data_client_aws_client_action_base as base
 import asyncio
 
+#add elasticache
 class cloud_data_client_aws_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(
@@ -68,7 +69,8 @@ class cloud_data_client_aws_client_action(base):
         self.get_common().helper_type().dictionary().merge_dictionary([
           {},
           {
-            "extra_tags": tasks["tags"].result().get(item["ARN"].lower())
+            "extra_tags": tasks["tags"].result().get(item["ARN"].lower()),
+            "extra_type": "memorydb"
           }, 
           item
         ]) for item in tasks["clusters"].result()

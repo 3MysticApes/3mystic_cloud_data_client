@@ -5,5 +5,21 @@ class cloud_data_client_aws_client(base):
     super().__init__(provider= "aws", logger_name= "cloud_data_client_aws_client", *args, **kwargs)
     
     
-  
+  def get_client_parser_args_actions(self, *args, **kwargs):
+    return {
+       "--elastisearch,--es": {
+        "default": None, 
+        "const": "elastisearch",
+        "dest": "data_action",
+        "help": "Data Action: This pulls Elasticsearch data from aws",
+        "action": 'store_const' # could look into append_const
+      },
+       "--elasticache,--ec": {
+        "default": None, 
+        "const": "elasticache",
+        "dest": "data_action",
+        "help": "Data Action: This pulls Elasticache data from aws",
+        "action": 'store_const' # could look into append_const
+      },
+    }
   
