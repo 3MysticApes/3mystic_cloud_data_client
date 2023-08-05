@@ -14,12 +14,5 @@ class cloud_data_client_aws_client(base):
         "help": "Data Action: This pulls Elasticsearch data from aws",
         "action": 'store_const' # could look into append_const
       },
-       "--elasticache,--ec": {
-        "default": None, 
-        "const": "elasticache",
-        "dest": "data_action",
-        "help": "Data Action: This pulls Elasticache data from aws",
-        "action": 'store_const' # could look into append_const
-      },
     }
   
