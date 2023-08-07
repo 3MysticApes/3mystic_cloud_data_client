@@ -128,7 +128,7 @@ class cloud_data_client_aws_client_action(base):
     for cost_metric in cost_metrics:
       
       adjusted_enddated = (start_date + self.get_common().helper_type().datetime().time_delta(months= 4, dt= start_date))
-      adjusted_enddated = self.get_common().helper_type().datetime().datetime_from_string(adjusted_enddated.strftime("%Y-01-%d"), dt_format="%Y-%m-%d")
+      adjusted_enddated = self.get_common().helper_type().datetime().datetime_from_string(adjusted_enddated.strftime("%Y-%m-01"), dt_format="%Y-%m-%d")
       if end_date < adjusted_enddated:
        adjusted_enddated =  end_date
       
@@ -183,7 +183,7 @@ class cloud_data_client_aws_client_action(base):
           data_dt= data_dt,
           fiscal_start= fiscal_start,
           fiscal_end= fiscal_end,
-          raw_data_cost = (cost_data[total_key] * (1 + (randint(0,20)/Decimal(100)))),
+          raw_data_cost = (cost_data[total_key] * ((randint(90,120)/Decimal(100)))),
           currency= (cost_data["currency"]),
           total_key= total_key
         )
