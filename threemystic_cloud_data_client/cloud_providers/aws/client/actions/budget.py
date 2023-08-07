@@ -132,7 +132,7 @@ class cloud_data_client_aws_client_action(base):
       if end_date < adjusted_enddated:
        adjusted_enddated =  end_date
       
-      results_by_time_forcast = self.get_cloud_client().general_boto_call_array(
+      results_by_time_forcast = self.get_cloud_client().general_boto_call_single(
         boto_call=lambda: client.get_cost_forecast(
           TimePeriod={
             'Start': start_date.strftime("%Y-%m-%d"),
