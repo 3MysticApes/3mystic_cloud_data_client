@@ -155,8 +155,9 @@ class cloud_data_client_aws_client_action(base):
       total_key = "forcast_total"
       currency = results_by_time_forcast["Total"]["Unit"]
     
-    
-      year_data[cost_metric] = {}
+      if year_data.get(cost_metric) is None:
+        year_data[cost_metric] = {}
+
       data_dt = None
       for cost_data in results_by_time_forcast["ForecastResultsByTime"]:
         data_dt = self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(cost_data["TimePeriod"]["Start"]), dt_format= "%Y-%m-%d")
@@ -244,7 +245,9 @@ class cloud_data_client_aws_client_action(base):
     
     total_key = "total"
     for cost_metric in cost_metrics:
-      year_data[cost_metric] = {}
+      if year_data.get(cost_metric) is None:
+        year_data[cost_metric] = {}
+        
       for cost_data in results_by_time:
         data_dt = self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(cost_data["TimePeriod"]["Start"]), dt_format= "%Y-%m-%d")
         by_month_key = self.get_common().helper_type().datetime().datetime_as_string(dt_format= "%Y%m", dt= data_dt)
