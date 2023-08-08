@@ -211,7 +211,7 @@ class cloud_data_client_aws_client_action(base):
   async def __process_get_cost_data_process_year_data(self, year_data, client, account, start_date, end_date, fiscal_start, fiscal_end, cost_metrics, *args, **kwargs):
 
     results_by_time = self.get_cloud_client().general_boto_call_array(
-      boto_call=lambda: client.get_cost_and_usage(
+      boto_call=lambda **item: client.get_cost_and_usage(
         TimePeriod={
           'Start': start_date.strftime("%Y-%m-%d"),
           'End': end_date.strftime("%Y-%m-%d"),
@@ -227,9 +227,10 @@ class cloud_data_client_aws_client_action(base):
         GroupBy= [
           {
             "Type": "DIMENSION",
-            "Key": "SERVICE"
+            "Key": "SERVICE" 
           }
-        ]
+        ], 
+        **item
       ),
       boto_params= None,
       boto_nextkey = "NextPageToken",

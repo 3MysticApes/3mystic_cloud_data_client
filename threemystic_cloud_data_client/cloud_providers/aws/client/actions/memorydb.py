@@ -18,12 +18,13 @@ class cloud_data_client_aws_client_action(base):
       resource_type_sub= "cluster", **item # {region, account_id, resource_id}
     ))
     
-    self.auto_region_resourcebytype= ["Amazon MemoryDB"]
+    self.auto_region_resourcebytype= ["Amazon MemoryDB", "Amazon Elastic Compute Cloud - Compute", "Amazon Relational Database Service"]
     self.resource_group_filter = [
     {
       'Name': 'resource-type',
       'Values': [
         'AWS::MemoryDB::Cluster',
+        'AWS::ElastiCache::CacheCluster'
       ]
     }
   ]
@@ -49,30 +50,59 @@ class cloud_data_client_aws_client_action(base):
       boto_nextkey = "NextToken",
       boto_key="Clusters"
     )
+  
+  async def __get_elasticache_tags(self, client, account, region, *args, **kwargs):
+      
+    try:
+      return await self.get_cloud_client().async_general_boto_call_array(
+          boto_call=lambda item: client.list_tags_for_resource(**item),
+          boto_params={"ResourceName": cache["ARN"]},
+          boto_nextkey = "Marker",
+          boto_key="TagList"
+      )
+    except Exception as err:
+      self.get_common().get_logger().exception(msg= f"__get_elasticache_tags: {err}", extra= {"exception": err})
+      return []
+  
+  async def __get_elasticache(self, client, *args, **kwargs):
+    return self.get_cloud_client().general_boto_call_array(
+      boto_call=lambda item: client.describe_clusters(**item),
+      boto_params={"ShowShardDetails": True},
+      boto_nextkey = "NextToken",
+      boto_key="Clusters"
+    )
 
   async def _process_account_data_region(self, account, region, resource_groups, loop, *args, **kwargs):
     client = self.get_cloud_client().get_boto_client(client= 'memorydb',  account=account, region=region)
+    client_elasticache = self.get_cloud_client().get_boto_client(client= 'elasticache',  account=account, region=region)
     resourcegroupstaggingapi_client = self.get_cloud_client().get_boto_client(client= 'resourcegroupstaggingapi',  account=account, region=region)
 
     tasks = {
       "clusters": loop.create_task(self.__get_clusters(client= client)),
       "tags": loop.create_task(self.__get_memorydb_tags(client= resourcegroupstaggingapi_client,  account=account, region=region)),
+      "elasticache": loop.create_task(self.__get_elasticache(client= client_elasticache)),
     }
     
     if len(tasks) > 0:
       await asyncio.wait(tasks.values())
 
+    elastic_cache_data_tags_tags = {
+        cache["ARN"]: loop.create_task(self.__get_elasticache_tags(client= client_elasticache, cache= cache)) for cache in tasks["elasticache"].result()
+    }
+
+    return_data = [
+      self.get_common().helper_type().dictionary().merge_dictionary([
+        {},
+        {
+          "extra_tags": tasks["tags"].result().get(item["ARN"].lower()),
+          "extra_type": "memorydb"
+        }, 
+        item
+      ]) for item in tasks["clusters"].result()
+    ]
+
     return {
       "region": region,
       "resource_groups": resource_groups,
-      "data": [
-        self.get_common().helper_type().dictionary().merge_dictionary([
-          {},
-          {
-            "extra_tags": tasks["tags"].result().get(item["ARN"].lower()),
-            "extra_type": "memorydb"
-          }, 
-          item
-        ]) for item in tasks["clusters"].result()
-        ]
+      "data": return_data
     }
