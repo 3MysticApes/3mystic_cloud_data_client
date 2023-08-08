@@ -11,7 +11,7 @@ class cloud_data_client_aws_client_action(base):
       *args, **kwargs)
     
     
-    self.data_id_name = "Name"
+    self.data_id_name = "ARN"
     
     self.arn_lambda = (lambda item: self.get_cloud_client().get_resource_general_arn(
       resource_type= "memorydb",
@@ -51,12 +51,12 @@ class cloud_data_client_aws_client_action(base):
       boto_key="Clusters"
     )
   
-  async def __get_elasticache_tags(self, client, account, region, *args, **kwargs):
+  async def __get_elasticache_tags(self, client, account, region, cache, *args, **kwargs):
       
     try:
       return await self.get_cloud_client().async_general_boto_call_array(
           boto_call=lambda item: client.list_tags_for_resource(**item),
-          boto_params={"ResourceName": cache["ARN"]},
+          boto_params={"ResourceName": cache[self.data_id_name]},
           boto_nextkey = "Marker",
           boto_key="TagList"
       )
@@ -66,10 +66,13 @@ class cloud_data_client_aws_client_action(base):
   
   async def __get_elasticache(self, client, *args, **kwargs):
     return self.get_cloud_client().general_boto_call_array(
-      boto_call=lambda item: client.describe_clusters(**item),
-      boto_params={"ShowShardDetails": True},
-      boto_nextkey = "NextToken",
-      boto_key="Clusters"
+      boto_call=lambda item: client.describe_cache_clusters(**item),
+      boto_params={
+        "ShowCacheNodeInfo": True,
+        "ShowCacheClustersNotInReplicationGroups": True
+      },
+      boto_nextkey = "Marker",
+      boto_key="CacheClusters"
     )
 
   async def _process_account_data_region(self, account, region, resource_groups, loop, *args, **kwargs):
@@ -87,18 +90,31 @@ class cloud_data_client_aws_client_action(base):
       await asyncio.wait(tasks.values())
 
     elastic_cache_data_tags_tags = {
-        cache["ARN"]: loop.create_task(self.__get_elasticache_tags(client= client_elasticache, cache= cache)) for cache in tasks["elasticache"].result()
+        cache[self.data_id_name]: loop.create_task(self.__get_elasticache_tags(client= client_elasticache, cache= cache, account= account, region= region)) for cache in tasks["elasticache"].result()
     }
+    if len(elastic_cache_data_tags_tags) > 0:
+      await asyncio.wait(tasks.values())
 
     return_data = [
       self.get_common().helper_type().dictionary().merge_dictionary([
         {},
         {
-          "extra_tags": tasks["tags"].result().get(item["ARN"].lower()),
+          "extra_tags": tasks["tags"].result().get(item[self.data_id_name].lower()),
           "extra_type": "memorydb"
         }, 
         item
       ]) for item in tasks["clusters"].result()
+    ]
+
+    return_data += [
+      self.get_common().helper_type().dictionary().merge_dictionary([
+        {},
+        {
+          "extra_tags": elastic_cache_data_tags_tags[item[self.data_id_name]].result() if elastic_cache_data_tags_tags.get(item[self.data_id_name]) is not None else {},
+          "extra_type": "elasticache"
+        }, 
+        item
+      ]) for item in tasks["elasticache"].result()
     ]
 
     return {
