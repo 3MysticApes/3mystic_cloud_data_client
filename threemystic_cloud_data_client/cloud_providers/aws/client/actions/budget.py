@@ -342,7 +342,7 @@ class cloud_data_client_aws_client_action(base):
     
 
     year_data = {}
-    cost_metric = "NetAmortizedCost"
+    cost_metric = "NetUnblendedCost"
     await self.__process_get_cost_data_process_year_data(
       year_data= year_data,
       client= client,
@@ -388,27 +388,27 @@ class cloud_data_client_aws_client_action(base):
       "last_month": Decimal(0),
     }
 
-    day_count = 0
-    for i in range(0,14):     
-      month_key_last14 = self.get_common().helper_type().datetime().datetime_as_string(
-        dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
-        dt_format= "%Y%m"
-      )
-      day_key = self.get_common().helper_type().datetime().datetime_as_string(
-        dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
-        dt_format= "%Y%m%d"
-      )
+    # day_count = 0
+    # for i in range(0,14):     
+    #   month_key_last14 = self.get_common().helper_type().datetime().datetime_as_string(
+    #     dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
+    #     dt_format= "%Y%m"
+    #   )
+    #   day_key = self.get_common().helper_type().datetime().datetime_as_string(
+    #     dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
+    #     dt_format= "%Y%m%d"
+    #   )
 
-      if year_data[cost_metric][month_key_last14]["days"].get(day_key) is None:
-        continue
+    #   if year_data[cost_metric][month_key_last14]["days"].get(day_key) is None:
+    #     continue
       
-      return_data["raw_last_14_days"][day_key] = year_data[cost_metric][month_key_last14]["days"].get(day_key)
+    #   return_data["raw_last_14_days"][day_key] = year_data[cost_metric][month_key_last14]["days"].get(day_key)
 
-      if day_count >= 7:
-        continue
+    #   if day_count >= 7:
+    #     continue
 
-      day_count += 1
-      return_data["last_seven_days"] += year_data[cost_metric][month_key_last14]["days"][day_key]["total"]
+    #   day_count += 1
+    #   return_data["last_seven_days"] += year_data[cost_metric][month_key_last14]["days"][day_key]["total"]
       
     for data in year_data[cost_metric].values():
       return_data["fiscal_year_to_date"] += data["totals"].get("fiscal_total")
@@ -424,6 +424,7 @@ class cloud_data_client_aws_client_action(base):
     
     if year_data[cost_metric].get(last_month_key) is not None:
       return_data["last_month"] = year_data[cost_metric][last_month_key]["totals"]["total"]
+      return_data["last_month_days"] = year_data[cost_metric][last_month_key]["days"].keys()
   
     return return_data
 
