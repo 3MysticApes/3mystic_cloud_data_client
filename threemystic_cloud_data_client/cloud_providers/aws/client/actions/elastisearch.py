@@ -24,7 +24,16 @@ class cloud_data_client_aws_client_action(base):
       ]
     }
   ]
-    
+  
+  async def __domainnames_tags(self, client, domain, *args, **kwargs):
+
+    return self.get_cloud_client().general_boto_call_array(
+      boto_call=lambda: client.list_tags(ARN=domain.get(self.data_id_name)),
+      boto_params= None,
+      boto_nextkey = None,
+      boto_key="TagList"
+    )
+  
   async def __domainnames_describe(self, client, domains_configuration, domain_chunked, *args, **kwargs):
 
     for domain in self.get_cloud_client().general_boto_call_array(
@@ -62,7 +71,7 @@ class cloud_data_client_aws_client_action(base):
         domains_configuration= domains_configuration,
         domain_chunked= domain_chunked
       )
-      
+
     return {
       "region": region,
       "resource_groups": resource_groups,
@@ -70,7 +79,7 @@ class cloud_data_client_aws_client_action(base):
         self.get_common().helper_type().dictionary().merge_dictionary([
           {},
           {
-            "extra_tags": {}
+            "extra_tags": await self.__domainnames_tags(client= client, domain= item)
           }, 
           item
         ]) for item in tasks["main"].result()

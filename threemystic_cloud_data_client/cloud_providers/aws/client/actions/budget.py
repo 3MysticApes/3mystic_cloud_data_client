@@ -438,7 +438,6 @@ class cloud_data_client_aws_client_action(base):
     
     if year_data[cost_metric].get(last_month_key) is not None:
       return_data["last_month"] = year_data[cost_metric][last_month_key]["totals"]["total"]
-      return_data["last_month_days"] = list(year_data[cost_metric][last_month_key]["days"].keys())
   
     return return_data
 
