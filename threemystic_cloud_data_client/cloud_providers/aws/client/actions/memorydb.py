@@ -13,10 +13,7 @@ class cloud_data_client_aws_client_action(base):
     
     self.data_id_name = "ARN"
     
-    self.arn_lambda = (lambda item: self.get_cloud_client().get_resource_general_arn(
-      resource_type= "memorydb",
-      resource_type_sub= "cluster", **item # {region, account_id, resource_id}
-    ))
+    self.arn_lambda = (lambda item: item["raw_item"][self.data_id_name])
     
     self.auto_region_resourcebytype= ["Amazon MemoryDB", "Amazon Elastic Compute Cloud - Compute", "Amazon Relational Database Service"]
     self.resource_group_filter = [

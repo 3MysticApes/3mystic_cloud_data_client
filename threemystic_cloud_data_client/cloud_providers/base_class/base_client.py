@@ -73,13 +73,6 @@ class cloud_data_client_provider_base_client(base):
         "help": "Data Action: This pulls either ASG or VMSS depending on the provider",
         "action": 'store_const'
       },
-      "--certificates,--ssl": {
-        "default": None, 
-        "const": "certificates",
-        "dest": "data_action",
-        "help": "Data Action: This pulls Certificats information from services like acm/keyvault",
-        "action": 'store_const'
-      },
       "--dns": {
         "default": None, 
         "const": "dns",

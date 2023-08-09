@@ -342,7 +342,7 @@ class cloud_data_client_aws_client_action(base):
     
 
     year_data = {}
-    cost_metric = "NetUnblendedCost"
+    cost_metric = "NetAmortizedCost"
     await self.__process_get_cost_data_process_year_data(
       year_data= year_data,
       client= client,

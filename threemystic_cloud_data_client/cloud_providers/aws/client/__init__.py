@@ -14,5 +14,12 @@ class cloud_data_client_aws_client(base):
         "help": "Data Action: This pulls Elasticsearch data from aws",
         "action": 'store_const' # could look into append_const
       },
+      "--certificates,--ssl": {
+        "default": None, 
+        "const": "certificates",
+        "dest": "data_action",
+        "help": "Data Action: This pulls Certificats information from services like acm",
+        "action": 'store_const'
+      },
     }
   
