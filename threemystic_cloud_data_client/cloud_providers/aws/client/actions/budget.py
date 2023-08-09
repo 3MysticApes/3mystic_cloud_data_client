@@ -212,7 +212,7 @@ class cloud_data_client_aws_client_action(base):
         
     return self.get_cloud_data_client().get_default_currency()
       
-  async def __process_get_cost_data_process_year_data(self, year_data, client, account, start_date, end_date, fiscal_start, fiscal_end, cost_metrics, *args, **kwargs):
+  async def __process_get_cost_data_process_year_data(self, year_data, client, account, granularity, start_date, end_date, fiscal_start, fiscal_end, cost_metrics, *args, **kwargs):
 
     results_by_time = self.get_cloud_client().general_boto_call_array(
       boto_call=lambda item: client.get_cost_and_usage(
@@ -220,7 +220,7 @@ class cloud_data_client_aws_client_action(base):
           'Start': start_date.strftime("%Y-%m-%d"),
           'End': end_date.strftime("%Y-%m-%d"),
         },
-        Granularity='DAILY',
+        Granularity= granularity,
         Filter={
           "Dimensions":{
             "Key":"LINKED_ACCOUNT",
@@ -347,6 +347,7 @@ class cloud_data_client_aws_client_action(base):
       year_data= year_data,
       client= client,
       account= account,
+      granularity= 'DAILY',
       start_date= start_date,
       end_date= self.get_data_start() if forecast_end > self.get_data_start() else forecast_end,
       fiscal_start= fiscal_year_start_date, 
@@ -388,27 +389,40 @@ class cloud_data_client_aws_client_action(base):
       "last_month": Decimal(0),
     }
 
-    # day_count = 0
-    # for i in range(0,14):     
-    #   month_key_last14 = self.get_common().helper_type().datetime().datetime_as_string(
-    #     dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
-    #     dt_format= "%Y%m"
-    #   )
-    #   day_key = self.get_common().helper_type().datetime().datetime_as_string(
-    #     dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
-    #     dt_format= "%Y%m%d"
-    #   )
+    last_14_days_data = {}
+    await self.__process_get_cost_data_process_year_data(
+      year_data= last_14_days_data,
+      client= client,
+      account= account,
+      granularity= 'DAILY',
+      start_date= (self.get_data_start() + self.get_common().helper_type().datetime().time_delta(days= -15, dt= self.get_data_start())),
+      end_date= self.get_data_start() if forecast_end > self.get_data_start() else forecast_end,
+      fiscal_start= fiscal_year_start_date,
+      fiscal_end= fiscal_year_end,
+      cost_metrics = [cost_metric]
+    )
 
-    #   if year_data[cost_metric][month_key_last14]["days"].get(day_key) is None:
-    #     continue
+    day_count = 0
+    for i in range(0,14):     
+      month_key_last14 = self.get_common().helper_type().datetime().datetime_as_string(
+        dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
+        dt_format= "%Y%m"
+      )
+      day_key = self.get_common().helper_type().datetime().datetime_as_string(
+        dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
+        dt_format= "%Y%m%d"
+      )
+
+      if last_14_days_data[cost_metric][month_key_last14]["days"].get(day_key) is None:
+        continue
       
-    #   return_data["raw_last_14_days"][day_key] = year_data[cost_metric][month_key_last14]["days"].get(day_key)
+      return_data["raw_last_14_days"][day_key] = last_14_days_data[cost_metric][month_key_last14]["days"].get(day_key)
 
-    #   if day_count >= 7:
-    #     continue
+      if day_count >= 7:
+        continue
 
-    #   day_count += 1
-    #   return_data["last_seven_days"] += year_data[cost_metric][month_key_last14]["days"][day_key]["total"]
+      day_count += 1
+      return_data["last_seven_days"] += year_data[cost_metric][month_key_last14]["days"][day_key]["total"]
       
     for data in year_data[cost_metric].values():
       return_data["fiscal_year_to_date"] += data["totals"].get("fiscal_total")
