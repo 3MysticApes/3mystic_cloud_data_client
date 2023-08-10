@@ -342,7 +342,7 @@ class cloud_data_client_aws_client_action(base):
     
 
     year_data = {}
-    cost_metric = "NetUnblendedCost"
+    cost_metrics = ["NetUnblendedCost"]
     await self.__process_get_cost_data_process_year_data(
       year_data= year_data,
       client= client,
@@ -352,7 +352,7 @@ class cloud_data_client_aws_client_action(base):
       end_date= self.get_data_start() if forecast_end > self.get_data_start() else forecast_end,
       fiscal_start= fiscal_year_start_date, 
       fiscal_end= fiscal_year_end,
-      cost_metrics = [cost_metric]
+      cost_metrics = cost_metrics
     )
 
     if forecast_end > self.get_data_start():
@@ -364,7 +364,7 @@ class cloud_data_client_aws_client_action(base):
         end_date= forecast_end,
         fiscal_start= fiscal_year_start_date, 
         fiscal_end= fiscal_year_end,
-        cost_metrics = [cost_metric]
+        cost_metrics = cost_metrics
       )
 
     month_key = self.get_common().helper_type().datetime().datetime_as_string(
@@ -377,17 +377,12 @@ class cloud_data_client_aws_client_action(base):
     )
     
     return_data = {
-      "cost_metric": cost_metric,
-      "year_to_date": Decimal(0),  
-      "year_forecast": Decimal(0),
-      "fiscal_year_to_date": Decimal(0),  
-      "fiscal_year_forecast": Decimal(0),
-      "month_to_date": Decimal(0),  
-      "month_forecast": Decimal(0),
-      "last_seven_days": Decimal(0),
-      "raw_last_14_days": {},
-      "last_month": Decimal(0),
+      "cost_metrics": cost_metrics,
+      "cost_metric_main": cost_metrics[0],
+      "data":{}
     }
+    
+
 
     last_14_days_data = {}
     await self.__process_get_cost_data_process_year_data(
@@ -399,45 +394,59 @@ class cloud_data_client_aws_client_action(base):
       end_date= self.get_data_start() if forecast_end > self.get_data_start() else forecast_end,
       fiscal_start= fiscal_year_start_date,
       fiscal_end= fiscal_year_end,
-      cost_metrics = [cost_metric]
+      cost_metrics = cost_metrics
     )
 
-    day_count = 0
-    for i in range(0,14):     
-      month_key_last14 = self.get_common().helper_type().datetime().datetime_as_string(
-        dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
-        dt_format= "%Y%m"
-      )
-      day_key = self.get_common().helper_type().datetime().datetime_as_string(
-        dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
-        dt_format= "%Y%m%d"
-      )
-
-      if last_14_days_data[cost_metric][month_key_last14]["days"].get(day_key) is None:
-        continue
+    for cost_metric in cost_metrics:
+      day_count = 0
+      if cost_metric not in return_data["data"]:
+        return_data["data"][cost_metric]={
+          "year_to_date": Decimal(0),  
+          "year_forecast": Decimal(0),
+          "fiscal_year_to_date": Decimal(0),  
+          "fiscal_year_forecast": Decimal(0),
+          "month_to_date": Decimal(0),  
+          "month_forecast": Decimal(0),
+          "last_seven_days": Decimal(0),
+          "raw_last_14_days": {},
+          "last_month": Decimal(0),
+        }
       
-      return_data["raw_last_14_days"][day_key] = last_14_days_data[cost_metric][month_key_last14]["days"].get(day_key)
+      for i in range(0,14):     
+        month_key_last14 = self.get_common().helper_type().datetime().datetime_as_string(
+          dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
+          dt_format= "%Y%m"
+        )
+        day_key = self.get_common().helper_type().datetime().datetime_as_string(
+          dt= (self.get_data_start() - self.get_common().helper_type().datetime().time_delta(days= i)),
+          dt_format= "%Y%m%d"
+        )
 
-      if day_count >= 7:
-        continue
+        if last_14_days_data[cost_metric][month_key_last14]["days"].get(day_key) is None:
+          continue
+        
+        return_data["data"][cost_metric]["raw_last_14_days"][day_key] = last_14_days_data[cost_metric][month_key_last14]["days"].get(day_key)
 
-      day_count += 1
-      return_data["last_seven_days"] += year_data[cost_metric][month_key_last14]["days"][day_key]["total"]
+        if day_count >= 7:
+          continue
+
+        day_count += 1
+        return_data["data"][cost_metric]["last_seven_days"] += year_data[cost_metric][month_key_last14]["days"][day_key]["total"]
       
-    for data in year_data[cost_metric].values():
-      return_data["fiscal_year_to_date"] += data["totals"].get("fiscal_total")
-      return_data["fiscal_year_forecast"] += (data["totals"].get("fiscal_total") + data["totals"].get("fiscal_forcast_total"))
-      if data["year"] == self.get_data_start().year:
-        return_data["year_to_date"] += data["totals"].get("total")
-        return_data["year_forecast"] += (data["totals"].get("total") + data["totals"].get("forcast_total"))
+      for data in year_data[cost_metric].values():
+        return_data["data"][cost_metric]["fiscal_year_to_date"] += data["totals"].get("fiscal_total")
+        return_data["data"][cost_metric]["fiscal_year_forecast"] += (data["totals"].get("fiscal_total") + data["totals"].get("fiscal_forcast_total"))
+        if data["year"] == self.get_data_start().year:
+          return_data["data"][cost_metric]["year_to_date"] += data["totals"].get("total")
+          return_data["data"][cost_metric]["year_forecast"] += (data["totals"].get("total") + data["totals"].get("forcast_total"))
 
-    
-    if year_data[cost_metric].get(month_key) is not None:
-      return_data["month_to_date"] = year_data[cost_metric][month_key]["totals"]["total"]
-      return_data["month_forecast"] = year_data[cost_metric][month_key]["totals"]["total"] + year_data[cost_metric][month_key]["totals"]["forcast_total"]
-    
-    if year_data[cost_metric].get(last_month_key) is not None:
-      return_data["last_month"] = year_data[cost_metric][last_month_key]["totals"]["total"]
+      
+      if year_data[cost_metric].get(month_key) is not None:
+        return_data["data"][cost_metric]["month_to_date"] = year_data[cost_metric][month_key]["totals"]["total"]
+        return_data["data"][cost_metric]["month_forecast"] = year_data[cost_metric][month_key]["totals"]["total"] + year_data[cost_metric][month_key]["totals"]["forcast_total"]
+      
+      if year_data[cost_metric].get(last_month_key) is not None:
+        return_data["data"][cost_metric]["last_month"] = year_data[cost_metric][last_month_key]["totals"]["total"]
   
     return return_data
 
