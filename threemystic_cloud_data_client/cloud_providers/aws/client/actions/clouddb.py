@@ -92,7 +92,7 @@ class cloud_data_client_aws_client_action(base):
               table_arn= table_details[self.data_id_name]
             ),
             "extra_scaling_policies": await self.__dynamodb_tables_ddb_autoscale(
-              client= client,
+              client= app_client,
               table_name= table_name
             )
           },
