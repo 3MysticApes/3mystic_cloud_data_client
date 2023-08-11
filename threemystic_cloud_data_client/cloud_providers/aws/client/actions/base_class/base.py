@@ -81,6 +81,11 @@ class cloud_data_client_aws_client_action_base(base):
     pass
   
   async def _process_account_region(self, account, region, loop, *args, **kwargs):
+    if self.get_cloud_client().get_account_id(account= account) != "374144443638":
+      return {
+      "account": account,
+      "data": [ ]
+    }
     resource_groups = self.__process_account_region_rg(account= account, region= region, loop= loop)
     return await self._process_account_data_region(
       account= account,
