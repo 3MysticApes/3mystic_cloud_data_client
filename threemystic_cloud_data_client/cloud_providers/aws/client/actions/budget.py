@@ -271,7 +271,7 @@ class cloud_data_client_aws_client_action(base):
           if total_attribute_empty:
             raw_row_data_cost += raw_row_data_cost_group
           
-          if year_data[cost_metric][by_month_key]["days"][day_key]["currency"] != cost_data_group["Metrics"][cost_metric]["Unit"]:
+          if year_data[cost_metric][by_month_key]["days"][day_key]["currency"] != self.get_common().helper_type().string().set_case(string_value= cost_data_group["Metrics"][cost_metric]["Unit"], case= "upper"):
             row_data_cost_group = self.get_common().helper_currency().convert(
               ammount= row_data_cost_group,
               currency_from= cost_data_group["Metrics"][cost_metric]["Unit"],

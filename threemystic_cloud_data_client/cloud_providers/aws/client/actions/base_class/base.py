@@ -39,6 +39,17 @@ class cloud_data_client_aws_client_action_base(base):
   def auto_region_resourcebytype(self, value, *args, **kwargs):
     self._auto_region_resourcebytype = value
 
+  @property
+  def account_region_override(self, *args, **kwargs):
+    if hasattr(self, "_account_region_override"):
+      return self._account_region_override
+    
+    return {}
+  
+  @account_region_override.setter
+  def account_region_override(self, value, *args, **kwargs):
+    self._account_region_override = value
+
   @property  
   def resource_group_filter(self, *args, **kwargs):
     if hasattr(self, "_resource_group_filter"):
@@ -124,12 +135,26 @@ class cloud_data_client_aws_client_action_base(base):
       
       return resource_groups_by_resource
 
-  async def _process_account_data(self, account, loop, *args, **kwargs):
-
-    regions = self.get_cloud_client().get_accounts_regions_costexplorer(
+  async def _get_account_regions(self, account, loop, *args, **kwargs):
+    if self.account_region_override is not None and len(self.account_region_override) > 0:
+      return { self.get_cloud_client().get_account_id(account= account): self.account_region_override}
+    
+    return self.get_cloud_client().get_accounts_regions_costexplorer(
       accounts= [account],
       services= self.auto_region_resourcebytype
     ) if self.auto_region_resourcebytype is not None else {self.get_cloud_client().get_account_id(account= account): []}
+  
+  async def _process_account_data_resource_groups(self, resource_arns, resource_groups, *args, **kwargs):
+    return_resource_groups = []
+    for resource_arn in resource_arns:
+      if resource_groups.get(resource_arn) is None:
+        continue
+      return_resource_groups += resource_groups.get(resource_arn),
+    return return_resource_groups
+  
+  async def _process_account_data(self, account, loop, *args, **kwargs):
+    
+    regions = self._get_account_regions(account= account, loop= loop)
 
     return_data = {
       "account": account,
@@ -174,6 +199,13 @@ class cloud_data_client_aws_client_action_base(base):
             "raw_item": item
           }
         )
+        resource_arns_resourcegroup = [
+          resource_arn
+        ]
+
+        if item.get("extra_resource_group_arns") is not None:
+          if len(item.get("extra_resource_group_arns")) > 0:
+            resource_arns_resourcegroup += item.get("extra_resource_group_arns")
         return_data["data"].append(
           self.get_common().helper_type().dictionary().merge_dictionary([
             {},
@@ -182,7 +214,7 @@ class cloud_data_client_aws_client_action_base(base):
               resource_id= resource_arn,
               resource= item,
               region= region_task.result().get("region"),
-              resource_groups= region_task.result().get("resource_groups").get(resource_arn) if region_task.result().get("resource_groups").get(resource_arn) is not None else [],
+              resource_groups= self._process_account_data_resource_groups(resource_arns= resource_arns_resourcegroup, resource_groups= region_task.result().get("resource_groups")),
             ),
             {
               "extra_id_only": item.get(self.data_id_name)

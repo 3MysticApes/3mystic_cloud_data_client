@@ -231,7 +231,7 @@ class cloud_data_client_azure_client_action(base):
       raw_row_data_cost = (cost_data[column_indexs[cost_key]])
       row_data_cost = (cost_data[column_indexs[cost_key]])
       
-      if year_data[cost_metric][by_month_key]["days"][day_key]["currency"] != year_data[cost_metric][by_month_key]["days"][day_key]["origional_currency"]:
+      if year_data[cost_metric][by_month_key]["days"][day_key]["currency"] != self.get_common().helper_type().string().set_case(string_value= year_data[cost_metric][by_month_key]["days"][day_key]["origional_currency"], case= "upper"):
         row_data_cost = self.get_common().helper_currency().convert(
           ammount= row_data_cost,
           currency_from= year_data[cost_metric][by_month_key]["days"][day_key]["origional_currency"],
