@@ -212,32 +212,32 @@ class cloud_data_client_aws_client_action(base):
         
     return self.get_cloud_data_client().get_default_currency()
       
-  async def __process_get_cost_data_process_year_data(self, year_data, client, account, granularity, start_date, end_date, fiscal_start, fiscal_end, cost_metrics, *args, **kwargs):
-
-    results_by_time = self.get_cloud_client().general_boto_call_array(
-      boto_call=lambda item: client.get_cost_and_usage(
-        TimePeriod={
+  async def __process_get_cost_data_process_year_data(self, year_data, client, account, granularity, start_date, end_date, fiscal_start, fiscal_end, cost_metrics, group_by = None, *args, **kwargs):
+    
+    boto_params= {
+        "TimePeriod": {
           'Start': start_date.strftime("%Y-%m-%d"),
           'End': end_date.strftime("%Y-%m-%d"),
         },
-        Granularity= granularity,
-        Filter={
-          "Dimensions":{
+        "Granularity": granularity,
+        "Filter": {
+          "Dimensions": {
             "Key":"LINKED_ACCOUNT",
-            "Values":[self.get_cloud_client().get_account_id(account= account)]
+            "Values":[ self.get_cloud_client().get_account_id(account= account) ],
+            "MatchOptions": ["EQUALS"]
           }
         },
-        GroupBy= [
-          {
-            "Type": "DIMENSION",
-            "Key": "SERVICE" 
-          }
-        ],
+        "Metrics": cost_metrics
+      }
+    if group_by is not None:
+      if len(group_by) > 0:
+        boto_params["GroupBy"] = group_by
+    
+    results_by_time = self.get_cloud_client().general_boto_call_array(
+      boto_call=lambda item: client.get_cost_and_usage(
         **item
       ),
-      boto_params= {
-        "Metrics": cost_metrics
-      },
+      boto_params= boto_params,
       boto_nextkey = "NextPageToken",
       boto_nextkey_param = "NextPageToken",
       boto_key="ResultsByTime"
@@ -394,7 +394,13 @@ class cloud_data_client_aws_client_action(base):
       end_date= self.get_data_start() if forecast_end > self.get_data_start() else forecast_end,
       fiscal_start= fiscal_year_start_date,
       fiscal_end= fiscal_year_end,
-      cost_metrics = cost_metrics
+      cost_metrics = cost_metrics,
+      group_by = [
+        {
+          "Type": "DIMENSION",
+          "Key": "SERVICE" 
+        }
+      ]
     )
 
     for cost_metric in cost_metrics:
