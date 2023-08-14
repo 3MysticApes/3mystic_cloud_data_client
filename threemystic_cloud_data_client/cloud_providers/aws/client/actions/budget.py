@@ -160,9 +160,11 @@ class cloud_data_client_aws_client_action(base):
       if year_data.get(cost_metric) is None:
         year_data[cost_metric] = {}
 
-      data_dt = None
+      end_date_forcast = None
       for cost_data in results_by_time_forcast["ForecastResultsByTime"]:
         data_dt = self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(cost_data["TimePeriod"]["Start"]), dt_format= "%Y-%m-%d")
+        if end_date_forcast is None or (end_date_forcast is not None and data_dt > end_date_forcast):
+          end_date_forcast = self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(cost_data["TimePeriod"]["End"]), dt_format= "%Y-%m-%d")
 
         self.__process_get_cost_data_process_forcast_process_day(
           cost_metric= cost_metric,
@@ -175,24 +177,23 @@ class cloud_data_client_aws_client_action(base):
           total_key= total_key
         )
 
-      if data_dt is not None:
-        data_dt = self.get_common().helper_type().datetime().datetime_from_string(dt_string= str(cost_data["TimePeriod"]["End"]), dt_format= "%Y-%m-%d")
-        by_month_key = self.get_common().helper_type().datetime().datetime_as_string(dt_format= "%Y%m", dt= data_dt)
-        day_key = self.get_common().helper_type().datetime().datetime_as_string(dt_format= "%Y%m%d", dt= data_dt)
+      if end_date_forcast is not None:
+        by_month_key = self.get_common().helper_type().datetime().datetime_as_string(dt_format= "%Y%m", dt= end_date_forcast)
+        day_key = self.get_common().helper_type().datetime().datetime_as_string(dt_format= "%Y%m%d", dt= end_date_forcast)
         cost_data = year_data[cost_metric][by_month_key]["days"][day_key]
 
-        while data_dt < end_date:
+        while end_date_forcast < end_date:
           self.__process_get_cost_data_process_forcast_process_day(
             cost_metric= cost_metric,
             year_data= year_data[cost_metric],
-            data_dt= data_dt,
+            data_dt= end_date_forcast,
             fiscal_start= fiscal_start,
             fiscal_end= fiscal_end,
             raw_data_cost = (cost_data[total_key] * ((randint(90,120)/Decimal(100)))),
             currency= (cost_data["currency"]),
             total_key= total_key
           )
-          data_dt += (self.get_common().helper_type().datetime().time_delta(days= 1, dt= data_dt))         
+          end_date_forcast += (self.get_common().helper_type().datetime().time_delta(days= 1, dt= end_date_forcast))         
 
 
   def get_total_cost_data(self, cost_data, cost_metric, *args, **kwargs):
