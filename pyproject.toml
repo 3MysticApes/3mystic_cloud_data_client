@@ -28,7 +28,7 @@ classifiers = [
 dependencies = [
   "colorama; platform_system == 'Windows'",
   "threemystic-common >= 0.1.17",
-  "threemystic-cloud-client >= 0.1.63",
+  "threemystic-cloud-client >= 0.1.64",
   "typing-extensions >= 4.4.0",
   "asyncio >= 3.4.3",
   "tqdm >= 4.65.0",
@@ -45,7 +45,7 @@ dependencies = [
   "azure-mgmt-redis >= 14",
   "azure-mgmt-resourcegraph >= 8",
   "azure-mgmt-sql >= 3",
-  "azure-mgmt-sqlvirtualmachine >= 0.6",
+  "azure-mgmt-sqlvirtualmachine >= 1.0.0b5",
   "azure-mgmt-subscription >= 3",
   "azure-mgmt-synapse >= 2",
   "azure-keyvault-administration >= 4",
