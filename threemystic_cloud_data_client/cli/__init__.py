@@ -84,20 +84,35 @@ class cloud_data_client_cli(base_process_options):
 
   def version_dispaly(self, *args, **kwargs): 
     from threemystic_cloud_client.cloud_client import cloud_client
-    cloud_client = cloud_client(
-      logger= self._cloud_data_client.get_common().get_logger(), 
+    client = cloud_client(
+      logger= self._cloud_data_client.get_common().get_logger(),
       common= self._cloud_data_client.get_common())
     print(f"You currenly have installed")
     print(f"3mystic_cloud_data_client: v{self._cloud_data_client.version()}")
-    print(f"3mystic_cloud_client: v{cloud_client.version()}")
+    print(f"3mystic_cloud_client: v{client.version()}")
     print(f"3mystic_common: v{self._cloud_data_client.get_common().version()}")
     print()
+    print(f"Current supported cloud providers: {client.get_supported_providers()}")
+    print(f"Cloud Providers config status: ")
+
+
+    print(f"Data General Configuration: {self._cloud_data_client.client(provider= client.get_supported_providers()[0], suppress_parser_help= True).get_cloud_data_client().is_general_config_completed()}")
+    print()
+    
+    for cloud_provider in client.get_supported_providers():
+      data_client = self._cloud_data_client.client(provider= cloud_provider, suppress_parser_help= True)
+      
+      print()
+      print(f"{cloud_provider}: ")
+      print(f"3mystic_cloud_data_client: {self._cloud_data_client.client(provider= client.get_supported_providers()[0], suppress_parser_help= True).get_cloud_data_client().ensure_cloud_client_config_completed()}")
+      print(f"3mystic_cloud_client: {data_client.get_cloud_client().is_provider_config_completed() if data_client.get_cloud_client() is not None else False}")
 
   def __get_client_acount(self, *args, **kwargs):
     if not hasattr(self, "_client_action"):
       return None
     
     return self._client_action
+  
   def main(self, *args, **kwargs):    
     if self.__get_client_acount() is None:
       print(f"Thank you for using the 3 Mystic Apes Cloud Client.")
