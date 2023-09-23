@@ -84,7 +84,7 @@ class cloud_data_client_provider_base(base):
     return True and self.is_general_config_completed()
   
   def get_main_directory_name(self, *args, **kwargs):
-    return "data_client"  
+    return "data_client"
 
   def __load_config(self, *args, **kwargs):
     config_data = self.get_common().helper_config().load(

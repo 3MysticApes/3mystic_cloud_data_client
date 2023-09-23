@@ -21,7 +21,7 @@ class cloud_data_client_general_config_step_1(base):
               "validation": f"Valid options are: {self.get_supported_providers()}",
             },
             "conversion": lambda item: self.get_common().helper_type().string().set_case(string_value= item, case= "lower"),
-            "desc": f"What do you want as the the default provider? \nValid Options: {self.get_supported_providers()}",
+            "desc": f"What do you want as the the default data client provider? \nValid Options: {self.get_supported_providers()}",
             "default": self.get_default_provider(),
             "handler": generate_data_handlers.get_handler(handler= "base"),
             "optional": True

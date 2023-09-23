@@ -7,7 +7,6 @@ class cloud_data_client_azure_config_step_1(base):
   def __init__(self, *args, **kwargs):
     super().__init__(logger_name= "cloud_data_client_azure_config_step_1", *args, **kwargs)
     
-
   def check_cloud_client(self, *args, **kwargs):
     cloud_client = client( common= self.get_common(), logger= self.get_common().get_logger())
 
@@ -21,7 +20,7 @@ class cloud_data_client_azure_config_step_1(base):
               "validation": f"Valid options for Yes are: {self.get_common().helper_type().bool().is_true_values()}",
             },
             "conversion": lambda item: self.get_common().helper_type().bool().is_true(check_value= item),
-            "desc": f"Do you need to configure the Cloud Client.\nValid Options: {self.get_common().helper_type().bool().is_true_values()}",
+            "desc": f"Do you need to update the Cloud Client.\nValid Options: {self.get_common().helper_type().bool().is_true_values()}",
             "default": None,
             "handler": generate_data_handlers.get_handler(handler= "base"),
             "optional": True
@@ -48,7 +47,7 @@ class cloud_data_client_azure_config_step_1(base):
       print()
       print()      
       print("--------------------------------------------------------------")
-      print(f"The general config has been configured, do you want to update?")
+      print(f"The data general config has been configured, do you want to update?")
       response = self.get_common().generate_data().generate(
         generate_data_config = {
           "base_config": {
@@ -57,7 +56,7 @@ class cloud_data_client_azure_config_step_1(base):
               "validation": f"Valid options for Yes are: {self.get_common().helper_type().bool().is_true_values()}",
             },
             "conversion": lambda item: self.get_common().helper_type().bool().is_true(check_value= item),
-            "desc": f"Data Client: Do you want to configure base config?\nLeave blank to exit.\nValid Options: {self.get_common().helper_type().bool().is_true_values()}",
+            "desc": f"Data Client: Do you want to update base config?\nLeave blank to exit.\nValid Options: {self.get_common().helper_type().bool().is_true_values()}",
             "default": None,
             "handler": generate_data_handlers.get_handler(handler= "base"),
             "optional": True
@@ -72,7 +71,7 @@ class cloud_data_client_azure_config_step_1(base):
         return
     
     if not self.is_general_config_completed():
-      print("You must configure the General Config...")
+      print("You must configure the Data Client General Config...")
       self.get_common().helper_type().datetime().time_sleep(seconds= 2)
     client.action_config()
 
