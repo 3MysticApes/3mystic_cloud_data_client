@@ -104,7 +104,7 @@ class cloud_data_client_cli(base_process_options):
       
       print()
       print(f"{cloud_provider}: ")
-      print(f"3mystic_cloud_data_client: {self._cloud_data_client.client(provider= client.get_supported_providers()[0], suppress_parser_help= True).get_cloud_data_client().ensure_cloud_client_config_completed()}")
+      print(f"3mystic_cloud_data_client: {data_client.get_cloud_data_client().is_config_completed()}")
       print(f"3mystic_cloud_client: {data_client.get_cloud_client().is_provider_config_completed() if data_client.get_cloud_client() is not None else False}")
 
   def __get_client_acount(self, *args, **kwargs):

@@ -57,7 +57,7 @@ class cloud_data_client(base):
         cloud_client =  client,
         *args, **kwargs
       )
-      return
+      return self._client[provider]
     
     if provider == "aws":
       from threemystic_cloud_data_client.cloud_providers.aws.client import cloud_data_client_aws_client as provider_cloud_data_client
@@ -71,7 +71,7 @@ class cloud_data_client(base):
         cloud_client = client,
         *args, **kwargs
       )
-      return  
+      return self._client[provider]
        
     raise self.get_common().exception().exception(
       exception_type = "argument"

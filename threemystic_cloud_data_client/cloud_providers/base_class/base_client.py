@@ -236,7 +236,6 @@ class cloud_data_client_provider_base_client(base):
       if item is None or self.get_common().helper_type().string().is_null_or_whitespace(string_value= item):
         self._data_arg_param_values[key] = processed_info["processed_data"].get(key)
 
-
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value= self._data_arg_param_values.get("data_action")):
       if not self.get_suppres_parser_help():
         self._get_action_parser().print_help()

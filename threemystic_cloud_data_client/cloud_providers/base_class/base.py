@@ -80,6 +80,9 @@ class cloud_data_client_provider_base(base):
   def is_general_config_completed(self, *args, **kwargs):    
     return self.get_config().get("_config_process") is True and self.is_cloud_client_config_completed()
   
+  def is_config_completed(self, *args, **kwargs):    
+    return True and self.is_general_config_completed()
+  
   def get_main_directory_name(self, *args, **kwargs):
     return "data_client"  
 
