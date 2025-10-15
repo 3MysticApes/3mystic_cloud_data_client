@@ -10,7 +10,7 @@ name = "threemystic-cloud-data-client"
 description = "A tool for collecting data from various cloud providers"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [
   { name="Ron Truex" },
 ]
@@ -28,30 +28,10 @@ classifiers = [
 ]
 dependencies = [
   "colorama; platform_system == 'Windows'",
-  "threemystic-cloud-client >= 0.1.65",
-  "typing-extensions >= 4.4.0",
-  "asyncio >= 3.4.3",
-  "tqdm >= 4.65.0",
-  "azure-mgmt-compute >= 29",
-  "azure-mgmt-cosmosdb >= 9",
-  "azure-mgmt-costmanagement >= 4",
-  "azure-mgmt-dns >= 8",
-  "azure-mgmt-keyvault >= 10",
-  "azure-mgmt-managementgroups >= 1",
-  "azure-mgmt-monitor >= 5",
-  "azure-mgmt-network >= 23",
-  "azure-mgmt-privatedns >= 1",
-  "azure-mgmt-rdbms >= 10",
-  "azure-mgmt-redis >= 14",
-  "azure-mgmt-resourcegraph >= 8",
-  "azure-mgmt-sql >= 3",
-  "azure-mgmt-sqlvirtualmachine >= 1.0.0b5",
-  "azure-mgmt-subscription >= 3",
-  "azure-mgmt-synapse >= 2",
-  "azure-keyvault-administration >= 4",
-  "azure-keyvault-certificates >= 4",
-  "azure-keyvault-keys >= 4",
-  "azure-keyvault-secrets >= 4",
+  "threemystic-cloud-client >= 0.1.66",
+  "typing-extensions >= 4.15.0",
+  "tqdm >= 4.67.0",
+  "azure-mgmt-resource >= 23"
 
 ]
 dynamic = ["version"]
