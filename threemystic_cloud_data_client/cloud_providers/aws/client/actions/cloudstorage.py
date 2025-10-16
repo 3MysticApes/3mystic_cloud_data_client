@@ -213,7 +213,9 @@ class cloud_data_client_aws_client_action(base):
         self.get_common().helper_type().dictionary().merge_dictionary([
           {},
           {
-            "extra_tags": s3_details["tags"].result(),
+            "extra_data": {
+              "tags": s3_details["tags"].result()
+            },
             "extra_version": s3_details["version"].result(),
             "extra_encryption_rules": s3_details["encryption_rules"].result(),
             "extra_lifecycle": s3_details["lifecycle"].result(),

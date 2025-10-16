@@ -45,7 +45,7 @@ class cloud_data_client_aws_client_action(base):
         **base_action_params
       )
       tmp_ami_data = await ami_data.main(pool=pool, run_params= self.get_runparam_key(data_key= None))
-      self.required_extra_data["ami"] = await ami_data.get_data_by_id(results= tmp_ami_data, id_override = "extra_id_only")
+      self.required_extra_data["ami"] = await ami_data.get_data_by_id(results= tmp_ami_data, id_override = ["extra_data", "id"])
 
   def _process_preloaded_data(self, preloaded_data = None, *args, **kwargs):
     self.required_extra_data = {}

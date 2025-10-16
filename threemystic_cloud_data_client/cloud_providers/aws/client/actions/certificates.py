@@ -63,7 +63,9 @@ class cloud_data_client_aws_client_action(base):
         self.get_common().helper_type().dictionary().merge_dictionary([
           {},
           {
-            "extra_tags": await self.__acm_certificates_tags(client= client, account= account, region= region, certificate_arn= item[self.data_id_name])
+            "extra_data": {
+              "tags": await self.__acm_certificates_tags(client= client, account= account, region= region, certificate_arn= item[self.data_id_name])
+            }
           },
           item
         ]) for item in tasks["main"].result()

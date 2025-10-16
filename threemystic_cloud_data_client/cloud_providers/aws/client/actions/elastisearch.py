@@ -79,7 +79,7 @@ class cloud_data_client_aws_client_action(base):
         self.get_common().helper_type().dictionary().merge_dictionary([
           {},
           {
-            "extra_tags": await self.__domainnames_tags(client= client, domain= item)
+            "extra_data":{"tags": await self.__domainnames_tags(client= client, domain= item)}
           }, 
           item
         ]) for item in tasks["main"].result()

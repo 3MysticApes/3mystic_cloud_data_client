@@ -97,31 +97,32 @@ class cloud_data_client_provider_base_data(base):
     resource_data = self.get_common().helper_type().dictionary().merge_dictionary([
       {},
       {
-        "extra_account": self.get_common().helper_type().dictionary().merge_dictionary([
-          {},
-          {
-            "extra_environment": await self._get_environment(account= account),
-            "extra_tags": self.get_cloud_client().get_resource_tags_as_dictionary(resource= account)
-          },
-          self.get_cloud_client().serialize_resource(resource= account),
-        ]),
-        "extra_region": (
-          region if not None else (
-            self.get_cloud_client().get_resource_location(resource= resource) if resource is not None else None)),
-        "extra_resourcegroups": resource_groups,
-        "extra_environment": await self._get_environment(account= account, resource= resource),
-        "extra_tags": self.get_cloud_client().get_resource_tags_as_dictionary(resource= (resource if resource_tags_resource is None else resource_tags_resource)),
-        "extra_id": (
-          resource_id if not None else (
-            self.get_cloud_client().get_account_id(account= account) if account is not None else  None)),
+        "extra_data":{
+          "account": self.get_common().helper_type().dictionary().merge_dictionary([
+            {},
+            {
+              "environment": await self._get_environment(account= account),
+              "tags": self.get_cloud_client().get_resource_tags_as_dictionary(resource= account)
+            },
+            self.get_cloud_client().serialize_resource(resource= account),
+          ]),
+          "region": (
+            region if not None else (
+              self.get_cloud_client().get_resource_location(resource= resource) if resource is not None else None)),
+          "resourcegroups": self.get_common().helper_type().list().unique_list(
+            data= resource_groups,
+            case_sensitive = False
+          ),
+          "environment": await self._get_environment(account= account, resource= resource),
+          "tags": self.get_cloud_client().get_resource_tags_as_dictionary(resource= (resource if resource_tags_resource is None else resource_tags_resource)),
+          "id": (
+            resource_id if not None else (
+              self.get_cloud_client().get_account_id(account= account) if account is not None else  None)),
+        }
       },
       self.get_cloud_client().serialize_resource(resource= resource) if resource is not None else self.get_cloud_client().serialize_resource(resource= account)
     ])
-
-    resource_data["extra_resourcegroups"] = self.get_common().helper_type().list().unique_list(
-      data= resource_data.get("extra_resourcegroups"),
-      case_sensitive = False
-    )
+    
     return resource_data
   
   def format_results(self, results, output_format = None, *args, **kwargs):        
@@ -161,10 +162,10 @@ class cloud_data_client_provider_base_data(base):
   async def _process_get_data_by_id(self, results, id_override = None, *args, **kwargs):
     results_by_id = {}
     if self.get_common().helper_type().string().is_null_or_whitespace(string_value= id_override):
-      id_override = "extra_id"
+      id_override = ["extra_data", "id"]
     for _, result_data in results.items():
       for data in result_data:
-        results_by_id[data[id_override]] = data
+        results_by_id[self.get_item_data_value(item_data= data, value_key=id_override)] = data
     
     return results_by_id 
   

@@ -234,7 +234,7 @@ class cloud_data_client_aws_client_action(base):
       return_data.append(self.get_common().helper_type().dictionary().merge_dictionary([
         {},
         {
-          "extra_tags": tasks["tags"].result().get(function[self.data_id_name]),
+          "extra_data":{"tags": tasks["tags"].result().get(function[self.data_id_name])},
           "extra_efs_encrypted_state": self.__get_function_filesystem_encrypted_state(
             function= function,
             efs_encrypted_state= tasks["efs_encrypted_state"].result()

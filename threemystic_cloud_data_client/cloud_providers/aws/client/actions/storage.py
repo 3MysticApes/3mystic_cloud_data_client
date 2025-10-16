@@ -11,7 +11,7 @@ class cloud_data_client_aws_client_action(base):
       *args, **kwargs)
     
     
-    self.data_id_name = "extra_id"
+    self.data_id_name = ["extra_data", "id"]
     
     self.arn_lambda = (lambda item: self.get_cloud_client().get_resource_general_arn(
       resource_type= "rds" if "rds" in item["raw_item"]["attached"] else "ec2",
@@ -95,18 +95,20 @@ class cloud_data_client_aws_client_action(base):
     return {
       "data":data_item,
       "extras":{
+         "extra_data":{
+            "id": data_item.get("DBInstanceIdentifier"),
+            "name": data_item.get("DBName"),
+            "tags": data_item["TagList"],
+         },
         "extra_resource_group_arns": extra_resource_group_arns,
         "extra_type": data_item.get("StorageType").upper(),
-        "extra_id": data_item.get("DBInstanceIdentifier"),
-        "extra_name": data_item.get("DBName"),
         "extra_size": data_item.get("AllocatedStorage"),
         "extra_encrypted": data_item.get("StorageEncrypted"),
         "extra_attached": ["rds"],
         "extra_group_type": "dbcluster" if cluster is not None else None,
         "extra_group": cluster.get("DBClusterIdentifier") if cluster is not None else None,
         "extra_group_primary": cluster_primary.get("DBInstanceIdentifier") == data_item.get("DBInstanceIdentifier") if cluster is not None else None,
-        "extra_tags": data_item["TagList"]
-      }    
+      }
     }
   
   def __ec2_volumes_process_attached(self, data_item, force_id_lower = False, *args, **kwargs):
@@ -150,17 +152,19 @@ class cloud_data_client_aws_client_action(base):
     return {
       "data":data_item,
       "extras":{
+         "extra_data":{
+            "id": data_item.get("VolumeId"),
+            "name": storage_name["Value"] if storage_name is not None and storage_name.get("Value") is not None else None,
+            "tags": data_item.get("Tags"),
+         },
         "extra_resource_group_arns": extra_resource_group_arns,
         "extra_type": data_item.get("VolumeType").upper(),
-        "extra_id": data_item.get("VolumeId"),
-        "extra_name": storage_name["Value"] if storage_name is not None and storage_name.get("Value") is not None else None,
         "extra_size": data_item.get("Size"),
         "extra_encrypted": data_item.get("Encrypted"),
         "extra_attached": self.__ec2_volumes_process_attached(data_item= data_item),
         "extra_group_type": "asg" if not self.get_common().helper_type().string().is_null_or_whitespace(asg_name) else None,
         "extra_group": asg_name if not self.get_common().helper_type().string().is_null_or_whitespace(asg_name) else None,
         "extra_group_primary": primary_instance in [ attachment['InstanceId'] for attachment in data_item["Attachments"]  ] if not self.get_common().helper_type().string().is_null_or_whitespace(asg_name) and data_item.get("Attachments") is not None else None, 
-        "extra_tags": data_item.get("Tags")
       }      
     }
   

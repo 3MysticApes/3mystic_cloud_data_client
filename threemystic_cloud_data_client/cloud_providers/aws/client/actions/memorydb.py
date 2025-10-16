@@ -96,7 +96,7 @@ class cloud_data_client_aws_client_action(base):
       self.get_common().helper_type().dictionary().merge_dictionary([
         {},
         {
-          "extra_tags": tasks["tags"].result().get(item[self.data_id_name].lower()),
+          "extra_data": {"tags": tasks["tags"].result().get(item[self.data_id_name].lower())},
           "extra_type": "memorydb"
         }, 
         item

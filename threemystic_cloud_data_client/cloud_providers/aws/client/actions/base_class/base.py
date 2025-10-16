@@ -215,10 +215,7 @@ class cloud_data_client_aws_client_action_base(base):
               resource= item,
               region= region_task.result().get("region"),
               resource_groups= self._process_account_data_resource_groups(resource_arns= resource_arns_resourcegroup, resource_groups= region_task.result().get("resource_groups")),
-            ),
-            {
-              "extra_id_only": item.get(self.data_id_name)
-            }
+            )
           ])
         )
     return return_data
