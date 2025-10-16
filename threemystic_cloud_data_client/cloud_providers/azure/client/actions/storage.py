@@ -227,27 +227,39 @@ class cloud_data_client_azure_client_action(base):
     return creationData
 
   async def __convert_vmss_vm_disks_disks(self, vmss:VirtualMachineScaleSet, vm: VirtualMachineScaleSetVM, account, *args, **kwarg):
-
+    print(vm.storage_profile.os_disk.managed_disk)
     return_disks = [
-      await self.get_base_return_data(
-        account= self.get_cloud_client().serialize_resource(resource= account),
-        resource_id= vm.storage_profile.os_disk.managed_disk.id,
-        resource= vm.storage_profile.os_disk,
-        region= self.get_cloud_client().get_resource_location(resource= vmss),
-        resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= vmss)],
-      )
+      self.get_common().helper_type().dictionary().merge_dictionary([
+        {},
+        await self.get_base_return_data(
+          account= self.get_cloud_client().serialize_resource(resource= account),
+          resource_id= vm.storage_profile.os_disk.managed_disk.id,
+          resource= vm.storage_profile.os_disk,
+          region= self.get_cloud_client().get_resource_location(resource= vmss),
+          resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= vmss)],
+        ),
+        {
+          "type": "Microsoft.Compute/disks",
+        }
+      ])
     ]
     
     if len(vm.storage_profile.data_disks) > 0:
       for disk in vm.storage_profile.data_disks:
         return_disks.append(
-          await self.get_base_return_data(
-            account= self.get_cloud_client().serialize_resource(resource= account),
-            resource_id= disk.managed_disk.id,
-            resource= disk,
-            region= self.get_cloud_client().get_resource_location(resource= vmss),
-            resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= vmss)],
-          )
+          self.get_common().helper_type().dictionary().merge_dictionary([
+            {},
+            await self.get_base_return_data(
+              account= self.get_cloud_client().serialize_resource(resource= account),
+              resource_id= disk.managed_disk.id,
+              resource= disk,
+              region= self.get_cloud_client().get_resource_location(resource= vmss),
+              resource_groups= [self.get_cloud_client().get_resource_group_from_resource(resource= vmss)],
+            ),
+            {
+              "type": "Microsoft.Compute/disks",
+            }
+          ])
         )
 
     return return_disks
