@@ -227,7 +227,6 @@ class cloud_data_client_azure_client_action(base):
     return creationData
 
   async def __convert_vmss_vm_disks_disks(self, vmss:VirtualMachineScaleSet, vm: VirtualMachineScaleSetVM, account, *args, **kwarg):
-    print(vm.storage_profile.os_disk.managed_disk)
     return_disks = [
       self.get_common().helper_type().dictionary().merge_dictionary([
         {},
