@@ -190,6 +190,7 @@ class cloud_data_client_azure_client_action(base):
     return return_data
 
   async def __get_account_disk_merged(self, account, cost_by_resource, item, loop, *args, **kwarg):
+    
     return self.get_common().helper_type().dictionary().merge_dictionary([
         {},
         await self.get_base_return_data(
@@ -225,10 +226,11 @@ class cloud_data_client_azure_client_action(base):
     }
     return creationData
 
-  async def __convert_vmss_vm_disks_disks(self, vmss:VirtualMachineScaleSet, vm: VirtualMachineScaleSetVM, *args, **kwarg):
+  async def __convert_vmss_vm_disks_disks(self, vmss:VirtualMachineScaleSet, vm: VirtualMachineScaleSetVM, account, *args, **kwarg):
 
     return_disks = [
       await self.get_base_return_data(
+        account= self.get_cloud_client().serialize_resource(resource= account),
         resource_id= vm.storage_profile.os_disk.managed_disk.id,
         resource= vm.storage_profile.os_disk,
         region= self.get_cloud_client().get_resource_location(resource= vmss),
@@ -240,6 +242,7 @@ class cloud_data_client_azure_client_action(base):
       for disk in vm.storage_profile.data_disks:
         return_disks.append(
           await self.get_base_return_data(
+            account= self.get_cloud_client().serialize_resource(resource= account),
             resource_id= disk.managed_disk.id,
             resource= disk,
             region= self.get_cloud_client().get_resource_location(resource= vmss),
@@ -250,7 +253,7 @@ class cloud_data_client_azure_client_action(base):
     return return_disks
 
   async def __process_vmss_vm_disks(self, vmss:VirtualMachineScaleSet, vm: VirtualMachineScaleSetVM, *args, **kwarg):
-    return (await self.__convert_vmss_vm_disks_disks(vm= vm, vmss= vmss))
+    return (await self.__convert_vmss_vm_disks_disks(vm= vm, vmss= vmss, *args, **kwarg))
     
     
 
@@ -264,7 +267,7 @@ class cloud_data_client_azure_client_action(base):
         vm_object = self.get_cloud_client().deserialize_resource(aztype= VirtualMachineScaleSetVM, resource= vm)
         if self.__process_vmss_vm_disks_skip(vm=vm_object):
           continue
-        return_disks += (await self.__process_vmss_vm_disks(vm= vm_object, vmss= self.get_cloud_client().deserialize_resource(aztype= VirtualMachineScaleSet, resource= vmss)))
+        return_disks += (await self.__process_vmss_vm_disks(account= account, vm= vm_object, vmss= self.get_cloud_client().deserialize_resource(aztype= VirtualMachineScaleSet, resource= vmss)))
     
     disk_tasks = [ loop.create_task(self.__get_account_disk_merged(account= account, cost_by_resource= cost_by_resource, item= item, loop= loop)) for item in return_disks]
     if len(disk_tasks) < 1:

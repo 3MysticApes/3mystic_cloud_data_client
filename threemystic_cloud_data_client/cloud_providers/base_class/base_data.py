@@ -93,7 +93,6 @@ class cloud_data_client_provider_base_data(base):
     return "prod"
   
   async def get_base_return_data(self, account= None, resource_id = None, resource = None, region= None, resource_groups= None, resource_tags_resource = None, *args, **kwargs):
-    
     resource_data = self.get_common().helper_type().dictionary().merge_dictionary([
       {},
       {
@@ -517,7 +516,6 @@ class cloud_data_client_provider_base_data(base):
     await self._pre_load_main_process(pool= pool)
 
     accounts = self.get_accounts(*args, **kwargs)
-
     tasks = []
     tasks_processed = []
     if loop is None:
