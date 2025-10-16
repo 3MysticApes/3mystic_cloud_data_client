@@ -109,7 +109,7 @@ class cloud_data_client_provider_base_data(base):
             region if not None else (
               self.get_cloud_client().get_resource_location(resource= resource) if resource is not None else None)),
           "resourcegroups": self.get_common().helper_type().list().unique_list(
-            data= resource_groups,
+            data= self.get_common().helper_type().list().flatten(data= resource_groups),
             case_sensitive = False
           ),
           "environment": await self._get_environment(account= account, resource= resource),
