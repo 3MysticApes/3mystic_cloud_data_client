@@ -4,8 +4,6 @@ from azure.mgmt.privatedns import PrivateDnsManagementClient
 from azure.mgmt.dns import DnsManagementClient
 from azure.mgmt.resource import ResourceManagementClient
 
-
-
 class cloud_data_client_azure_client_action(base):
   def __init__(self, *args, **kwargs):
     super().__init__(

@@ -32,7 +32,8 @@ dependencies = [
   "typing-extensions >= 4.15.0",
   "tqdm >= 4.67.0",
   "azure-mgmt-resource >= 23",
-  "azure-mgmt-network >= 29"
+  "azure-mgmt-network >= 29",
+  "azure-mgmt-dns >= 9"
 
 ]
 dynamic = ["version"]
